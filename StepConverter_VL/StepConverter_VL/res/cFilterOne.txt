@@ -1,0 +1,38 @@
+//Last update time : 19.07.2010 00:37:20
+
+__kernel void exFilterOne(const __global uchar4* a, __global uchar4* f6, __global uchar4* f9, __global uchar4* f15, int iCPixels)
+{
+  // get index into global data array
+  int iGID = get_global_id(0);
+
+  // bound check (equivalent to the limit on a 'for' loop for standard/serial C code
+  if (iGID >= iCPixels)
+  {  
+    return; 
+  }
+
+  float4 ax; //f6
+  float4 bx; //f9
+  float4 cx; //f15
+  ax = convert_float4(a[iGID]) / 255.0f;
+  cx=bx=ax;
+
+//func 06
+  ax = fmod( ax-(pow(ax*3.0f,(float4)3.0f)/3.0f)+(pow(ax*5.0,(float4)5.0f)/5.0f) , (float4)1.0f);
+//--------------
+
+//func 09
+  if( bx.x == 0.0f ) bx.x=2.71828183f;
+  if( bx.y == 0.0f ) bx.y=2.71828183f;
+  if( bx.z == 0.0f ) bx.z=2.71828183f;
+
+  bx = fmod( log((float4)1.0f+cos(bx))/log((float4)1.0f+bx*bx), (float4)1.0f);
+//---------------
+
+//func 15
+ cx = fmod( (float4)2.0f*(cos(3.0f*cx)/sin(3.0f*cx))-(float4)1.0f/((float4)12.0f*cx*cx+(float4)7.0f*cx-(float4)5.0f), (float4)1.0f);
+//-------------------------------------------------------
+  f6[iGID] = convert_uchar4(ax * 255.0f);
+  f9[iGID] = convert_uchar4(bx * 255.0f);
+  f15[iGID] = convert_uchar4(cx * 255.0f);
+}
