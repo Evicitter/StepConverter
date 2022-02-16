@@ -1,0 +1,1 @@
+clang++ -O3 -Oz -std=c++11 -march=nehalem -fopenmp Base.o %1.cpp -o %1.exe

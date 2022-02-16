@@ -1,0 +1,1 @@
+for %%I in (*.exe) do (%%I 0 1024) && (DEL "%%I")
