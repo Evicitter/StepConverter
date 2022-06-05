@@ -1,0 +1,5 @@
+﻿//accel 2
+ffmpeg -i video.mp4 -vf setpts=PTS/2 -af atempo=2 result.mp4
+
+//deccel 2
+ffmpeg -i video.mp4 -vf setpts=PTS*2 -af atempo=0.5 result.mp4
