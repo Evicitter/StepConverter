@@ -1,8 +1,11 @@
 ﻿ffmpeg -f concat -i zconcat.txt -filter:v "crop=iw-64:ih,scale=1280:720" -b:v 4096k -b:a 128k ToN_sc_01_concat.mp4
 
+ffmpeg -i "concat:VTS_01_1.VOB|VTS_01_2.VOB|VTS_01_3.VOB|VTS_01_4.VOB|VTS_01_5.VOB" outfile.mp4
+
+cat VTS_01_1.VOB VTS_01_2.VOB VTS_01_3.VOB VTS_01_4.VOB VTS_01_5.VOB | ffmpeg -i - outfile.mp4
 
 
-
+<match template>
 ╔════════════════════════════════╦════════════════╦════════════════╗
 ║              name              ║   collisions   ║    elements    ║
 ╠════════════════════════════════╬════════════════╬════════════════╣
