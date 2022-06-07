@@ -1,0 +1,3 @@
+﻿ffprobe -threads 0 -v error -count_frames -i somefile
+
+example:>for %i in (*.mkv) do ffprobe -threads 0 -v error -count_frames -i "%i"
