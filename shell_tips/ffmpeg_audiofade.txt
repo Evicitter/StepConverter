@@ -1,0 +1,1 @@
+﻿ffmpeg -i "input.wav" -filter_complex "afade=type=in:duration=5,afade=type=out:duration=10:start_time=70" "fadewave.wav"
