@@ -1,11 +1,8 @@
 ﻿#include <stdio.h>
-#include <stdlib.h>
-#include <nmmintrin.h>
-
 #include <iostream>
 #include <string>
 
-//clang++ append.cpp -O3 -mtune=nehalem -march=nehalem -o Z:\append.exe
+//clang++ append.cpp -O3 -o Z:\append.exe
 
 int wmain(const int argc, const wchar_t* argv[])
 {
