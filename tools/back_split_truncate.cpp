@@ -47,7 +47,7 @@ int main()
 		
 		if( _wfopen_s(&wfile[i], writename.c_str(), L"ab") )	return 2 + i;
 		
-		setvbuf(wfile[i], nullptr, _IOFBF, 64u << 20u);
+		setvbuf(wfile[i], nullptr, _IOFBF,  4u << 20u);
 	}
 	
 	if( _wfopen_s(&hfile, openname.c_str(), L"r+b") )	return 1;
