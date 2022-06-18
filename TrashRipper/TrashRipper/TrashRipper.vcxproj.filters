@@ -1,0 +1,98 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="ffmpeg_api">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="ffmpeg_api\sources">
+      <UniqueIdentifier>{2dd97c06-861a-4944-9048-69dd23dde813}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="app">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="HashCls">
+      <UniqueIdentifier>{2302dc95-c12d-4e94-8652-d0a7b7d3ae36}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="TrashRipper.cpp">
+      <Filter>app</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ffmpeg_api\ffmpegDecoder.cpp">
+      <Filter>ffmpeg_api\sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ffmpeg_api\ffmpegStream.cpp">
+      <Filter>ffmpeg_api\sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ffmpeg_api\ffmpegStreamAudio.cpp">
+      <Filter>ffmpeg_api\sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ffmpeg_api\ffmpegStreamVideo.cpp">
+      <Filter>ffmpeg_api\sources</Filter>
+    </ClCompile>
+    <ClCompile Include="C1.cpp">
+      <Filter>app</Filter>
+    </ClCompile>
+    <ClCompile Include="C2.cpp">
+      <Filter>app</Filter>
+    </ClCompile>
+    <ClCompile Include="C3.cpp">
+      <Filter>app</Filter>
+    </ClCompile>
+    <ClCompile Include="C4.cpp">
+      <Filter>app</Filter>
+    </ClCompile>
+    <ClCompile Include="C5.cpp">
+      <Filter>app</Filter>
+    </ClCompile>
+    <ClCompile Include="C6.cpp">
+      <Filter>app</Filter>
+    </ClCompile>
+    <ClCompile Include="C7.cpp">
+      <Filter>app</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\VXcore\include\core\hashes\HashClasses.hpp">
+      <Filter>HashCls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ffmpeg_api\ffmpegDecoder.hpp">
+      <Filter>ffmpeg_api</Filter>
+    </ClInclude>
+    <ClInclude Include="FilesManager.hpp">
+      <Filter>app</Filter>
+    </ClInclude>
+    <ClInclude Include="bitmap_image.hpp">
+      <Filter>app</Filter>
+    </ClInclude>
+    <ClInclude Include="classChemicalBurner.hpp">
+      <Filter>app</Filter>
+    </ClInclude>
+    <ClInclude Include="classMaterialSpector.hpp">
+      <Filter>app</Filter>
+    </ClInclude>
+    <ClInclude Include="classLayersResources.hpp">
+      <Filter>app</Filter>
+    </ClInclude>
+    <ClInclude Include="classHashAccumulator.hpp">
+      <Filter>app</Filter>
+    </ClInclude>
+    <ClInclude Include="classRandomizerTest.hpp">
+      <Filter>app</Filter>
+    </ClInclude>
+    <ClInclude Include="classGarbageRipper.hpp">
+      <Filter>app</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\VXcore\include\core\hashes\ColidPool.hpp">
+      <Filter>HashCls</Filter>
+    </ClInclude>
+    <ClInclude Include="classHashAnalysis.hpp">
+      <Filter>app</Filter>
+    </ClInclude>
+    <ClInclude Include="classSplitFile.hpp">
+      <Filter>app</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
