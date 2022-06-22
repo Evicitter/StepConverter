@@ -1,9 +1,10 @@
 ﻿#include <SDKDDKVer.h>
-#include <io.h>
-#include <fcntl.h>
 
 #include <locale>
-//#include <codecvt>
+#include <codecvt>
+
+#include <io.h>
+#include <fcntl.h>
 
 #include <iostream>
 #include <fstream>
@@ -14,6 +15,8 @@
 
 #include <core/hashes/HashClasses.hpp>
 #include <core/utils/SpecialProgress.hpp>
+
+#include <core/PlatformUtils.hpp>
 
 //#include "_threads_/ThreadPoolWP.hpp"
 #include "_threads_/ThreadPool-master/ThreadPool.h"
@@ -27,17 +30,17 @@
 #include "classSplitFile.hpp"
 #include "FilesManager.hpp"
 
-std::unique_ptr<ChemicalBurner>		GChemicalBurner;
-std::unique_ptr<LayersResources>	GLayerRes;
-
+//128 bit hashes
 HashAccumulatorDummy<VX::hash::RHash>		GHI_RHash;
+
+//256 bit hashes
 HashAccumulator<VX::hash::DRIB>			GHI_DRIB;
 HashAccumulator<VX::hash::AESDM>		GHI_AESDM;
 HashAccumulator<VX::hash::AESMMO2>		GHI_AESMMO2;
 HashAccumulator<VX::hash::AESHIROSE>	GHI_AESHIROSE;
 
 static std::unique_ptr<ThreadPool> defaultThreadPool;
-static SC::FilesManager GFM;
+static appTR::FilesManager GFM;
 static std::wstring	OutputDirectory;
 
 class GenericAGMono : public SAudioGrabber
@@ -62,7 +65,7 @@ public:
 		sumsize += bufsize;
 		++proccnt;
 
-        GChemicalBurner->Saturate((const unsigned char*)buffer, bufsize);
+        appTR::GChemicalBurner->Saturate((const unsigned char*)buffer, bufsize);
 
 		GHI_RHash.update((const unsigned char*)buffer, bufsize);
 		GHI_DRIB.update((const unsigned char*)buffer, bufsize);
@@ -184,8 +187,8 @@ public:
 
 	void NumberCruncherLayerRes(SVideoGrabber::VideoBuffer* vb)
 	{
-		if(GLayerRes)
-		   GLayerRes->SaturateSpin(vb->getData(), vb->getSize());
+		if(appTR::GLayerRes)
+			appTR::GLayerRes->SaturateSpin(vb->getData(), vb->getSize());
 
 //On/Off hashing 256x256 rgb0 layers.
 #if 0
@@ -234,31 +237,6 @@ public:
 	}
 };
 
-static std::wstring getExtVar(const wchar_t* varname)
-{
-	std::wstring ret;
-
-#if defined(_MSC_VER) && defined(_WINDOWS_)
-    size_t req;
-    
-	req = GetEnvironmentVariableW(varname, nullptr, 0);
-
-	if(!req)
-		return L"";
-
-	ret.resize(req - 1u);
-
-	GetEnvironmentVariableW(varname, &ret.at(0), static_cast<DWORD>(req));
-	
-	if ((ret.size() > 3u) && (ret.back() != L'\\' && ret.back() != L'/'))
-		ret += L'\\';
-#else
-	#error "WRITE CODE IN THERE PLACE"
-#endif
-    
-    return ret;
-}
-
 static void LoadHashAccums(const std::wstring& todir)
 {
 	std::wcerr << "Load hashes [.";
@@ -293,17 +271,24 @@ static void LoadResults(const std::wstring& todir)
 {
 	std::wcerr << "Load data [.";
 	
-	if(GChemicalBurner)		GChemicalBurner->load(todir);
-	if (GLayerRes)			GLayerRes->load(todir + L"GLayerRes.bin");
+	std::ifstream iLR(todir + L"GLayerRes.bin",			std::ofstream::binary | std::ofstream::in);
+	std::ifstream iGCB(todir + L"GChemicalBurner.bin",	std::ofstream::binary | std::ofstream::in);
+
+	if (appTR::GLayerRes)				appTR::GLayerRes->load(iLR);
+	if (appTR::GChemicalBurner)		appTR::GChemicalBurner->load(iGCB);
+	
 	std::wcerr << ".]" << std::endl;
 }
 
 static void SaveResults(const std::wstring& todir)
 {
 	std::wcerr << "Save data [.";
-   
-	if (GChemicalBurner)	GChemicalBurner->save(todir);
-    if (GLayerRes)			GLayerRes->save(todir + L"GLayerRes.bin");
+
+	std::ofstream iLR(todir + L"GLayerRes.bin",			std::ofstream::binary | std::ofstream::out);
+	std::ofstream iGCB(todir + L"GChemicalBurner.bin",	std::ofstream::binary | std::ofstream::out);
+
+	if (appTR::GChemicalBurner)	appTR::GChemicalBurner->save(iGCB);
+    if (appTR::GLayerRes)			appTR::GLayerRes->save(iLR);
 	std::wcerr << ".]" << std::endl;
 }
 
@@ -340,7 +325,7 @@ void HelpMessage()
 	std::wcerr << "-layers-export" << std::endl;
 	std::wcerr << "-compile" << std::endl;
 	std::wcerr << "-compile-split" << std::endl;
-	std::wcerr << "-split           : example: -split <inputfile> <outdir> <numFiles range(2:256)> <size_block_bytes range(1:65536)>" << std::endl;
+	std::wcerr << "-split" << std::endl;
 	std::wcerr << "\t-list-delete            : Processing files in current directory and deleting ever file after processed." << std::endl;
 	std::wcerr << "\t-file <filename>        : One file processing." << std::endl;
 	std::wcerr << "\t-file-delete <filename> : One file processing and delete file after processed." << std::endl;
@@ -398,45 +383,6 @@ protected:
 	}
 };
 
-//TO DO: REVISION
-class CodePageConsole
-{
-private:
-	CONSOLE_SCREEN_BUFFER_INFO SBI;
-	HWND	consoleWindows;
-	UINT	uiCPI, uiCPO;
-
-public:
-	CodePageConsole()
-	{
-		uiCPI = GetConsoleCP();
-		uiCPO = GetConsoleOutputCP();
-		//consoleWindows = GetConsoleWindow();
-		//GetConsoleScreenBufferInfo(consoleWindows, &SBI);
-		//SetConsoleTextAttribute()
-
-		SetConsoleCP(CP_UTF8);
-		SetConsoleOutputCP(CP_UTF8);	//CP_WINUNICODE
-
-		SetPriorityClass(GetCurrentProcess(), BELOW_NORMAL_PRIORITY_CLASS);
-		//SetPriorityClass(GetCurrentProcess(), PROCESS_MODE_BACKGROUND_BEGIN);
-	}
-	~CodePageConsole()
-	{
-		SetConsoleCP(uiCPI);
-		SetConsoleOutputCP(uiCPO);
-		//SetConsoleScreenBufferInfo(consoleWindows, &SBI);
-		//SetPriorityClass(GetCurrentProcess(), PROCESS_MODE_BACKGROUND_END);
-	}
-	void print(std::wostream& out) const
-	{
-		out << "CodePageConsole: input  prev : " << uiCPI << std::endl;
-		out << "CodePageConsole: output prev : " << uiCPO << std::endl;
-		out << "CodePageConsole: input  setup : " << CP_UTF8 << std::endl;
-		out << "CodePageConsole: output setup : " << CP_UTF8 << std::endl;
-	}
-};
-
 int wmain(const int argc, const wchar_t* argv[])
 {
 #ifdef _WINDOWS_
@@ -446,8 +392,8 @@ int wmain(const int argc, const wchar_t* argv[])
 	//_setmode(_fileno(stdout), _O_U16TEXT);
 	//_setmode(_fileno(stderr), _O_U16TEXT);
 #endif
-	
-	CodePageConsole tempCPC;
+
+	VX::Platform::CodePageConsole tempCPC;
 
 	const std::locale locutf8 = std::locale(std::locale(), new std::codecvt_utf8<wchar_t>());
 	std::wcout.imbue(locutf8);
@@ -465,7 +411,8 @@ int wmain(const int argc, const wchar_t* argv[])
 	TimeInOut	registerTIO;
 	srand(static_cast<unsigned int>(registerTIO.getTime()));
 
-    std::wstring todir = getExtVar(L"RESPATH");
+    std::wstring todir =	VX::Platform::getEnvironmentVariable(L"RESPATH");
+							VX::Platform::appendSlashToPath(todir);
 
     if (todir.empty())
         std::wcerr << "RESPATH env var not found. Use current directory." << std::endl;
@@ -476,12 +423,12 @@ int wmain(const int argc, const wchar_t* argv[])
 
     if (wcscmp(argv[1], L"-dump") == 0)
     {
-		if (!GChemicalBurner)	GChemicalBurner = std::make_unique<ChemicalBurner>();
-		if (!GLayerRes)			GLayerRes = std::make_unique<LayersResources>();
+		if (!appTR::GChemicalBurner)	appTR::GChemicalBurner = std::make_unique<appTR::ChemicalBurner>();
+		if (!appTR::GLayerRes)			appTR::GLayerRes		= std::make_unique<appTR::LayersResources>();
 		LoadResults(todir);
-		std::wcout << "dump : GChemicalBurner:\n"; GChemicalBurner->dump(std::wcout);
+		std::wcout << "dump : GChemicalBurner:\n"; appTR::GChemicalBurner->dump(std::wcout);
 		std::wcout << std::endl;
-		std::wcout << "dump : GLayerRes    :\n"; GLayerRes->dump(std::wcout);
+		std::wcout << "dump : GLayerRes    :\n"; appTR::GLayerRes->dump(std::wcout);
 		std::wcout << std::endl;
 
 		std::wcout << "dump : GHI_RHash     :";	GHI_RHash.dump(todir,	std::wcout);		std::wcout << std::endl;
@@ -494,8 +441,8 @@ int wmain(const int argc, const wchar_t* argv[])
     }
     else if(wcscmp(argv[1], L"-merge") == 0)
     {
-		if (!GChemicalBurner)	GChemicalBurner	= std::make_unique<ChemicalBurner>();
-		if (!GLayerRes)			GLayerRes		= std::make_unique<LayersResources>();
+		if (!appTR::GChemicalBurner)	appTR::GChemicalBurner	= std::make_unique<appTR::ChemicalBurner>();
+		if (!appTR::GLayerRes)			appTR::GLayerRes		= std::make_unique<appTR::LayersResources>();
 		LoadResults(todir);
 
         std::wstring mergedir;
@@ -510,25 +457,30 @@ int wmain(const int argc, const wchar_t* argv[])
 			//GHI_AESHIROSE.merge(mergedir);
         
         {
-            ChemicalBurner CB;
-            if (CB.load(mergedir))        GChemicalBurner->merge(CB);
+			appTR::ChemicalBurner CB;
+			std::ifstream iGCB(mergedir + L"GChemicalBurner.bin", std::ofstream::binary | std::ofstream::in);
+            if (CB.load(iGCB))        appTR::GChemicalBurner->merge(CB);
         }
         {
-            LayersResources LR;
-            if (LR.load(mergedir + L"GLayerRes.bin"))        GLayerRes->merge(LR);
+			appTR::LayersResources LR;
+			std::ifstream iLR(mergedir + L"GLayerRes.bin", std::ofstream::binary | std::ofstream::in);
+            if (LR.load(iLR))        appTR::GLayerRes->merge(LR);
         }
         SaveResults(todir);
         return 0;
     }
 	else if (wcscmp(argv[1], L"-layers-export") == 0)
 	{
-		if (!GLayerRes)			GLayerRes = std::make_unique<LayersResources>();
-		if (GLayerRes && !GLayerRes->load(todir + L"GLayerRes.bin"))
+		if (!appTR::GLayerRes)			appTR::GLayerRes = std::make_unique<appTR::LayersResources>();
+		
+		std::ifstream iLR(todir + L"GLayerRes.bin", std::ofstream::binary | std::ofstream::in);
+
+		if (appTR::GLayerRes && !appTR::GLayerRes->load(iLR))
 		{
 			std::wcerr << "File \'GLayerRes.bin\' don\'t load.\n";
 			return 1;
 		}
-		GLayerRes->layers_export(todir);
+		appTR::GLayerRes->layers_export(todir);
 		return 0;
 	}
 	else if (wcscmp(argv[1], L"-split") == 0)
@@ -624,16 +576,16 @@ int wmain(const int argc, const wchar_t* argv[])
 		//FOR 16 bytes blocks
 		{
 			HashAnalysis	HA;
-			for (const auto & it : SC::FileManagerList((todir + L"GHI_16_*.story").c_str()))
-				HA.check(it.fname, 16u, todir, std::wcerr);
+			for (const auto & it : appTR::FileManagerList((todir + L"GHI_16_*.story").c_str()))
+				HA.check(it.fname.c_str(), 16u, todir, std::wcerr);
 			HA.print(std::wcout);
 		}
 
 		//FOR 32 bytes blocks
 		{
 			HashAnalysis	HA;
-			for (const auto & it : SC::FileManagerList((todir + L"GHI_32_*.story").c_str()))
-				HA.check(it.fname,	32u,	todir, std::wcerr);
+			for (const auto & it : appTR::FileManagerList((todir + L"GHI_32_*.story").c_str()))
+				HA.check(it.fname.c_str(),	32u,	todir, std::wcerr);
 			HA.print(std::wcout);
 		}
 		return 0;
@@ -654,16 +606,16 @@ int wmain(const int argc, const wchar_t* argv[])
 		//FOR 16 bytes blocks
 		{
 			HashAnalysis	HA;
-			for (const auto & it : SC::FileManagerList((todir + L"GHI_16_*.story").c_str()))
-				HA.check(it.fname, 16u, todir, std::wcerr);
+			for (const auto & it : appTR::FileManagerList((todir + L"GHI_16_*.story").c_str()))
+				HA.check(it.fname.c_str(), 16u, todir, std::wcerr);
 			HA.print(std::wcout);
 		}
 
 		//FOR 32 bytes blocks
 		{
 			HashAnalysis	HA;
-			for (const auto & it : SC::FileManagerList((todir + L"GHI_32_*.story").c_str()))
-				HA.flatten(it.fname, 32u, todir, std::wcerr);
+			for (const auto & it : appTR::FileManagerList((todir + L"GHI_32_*.story").c_str()))
+				HA.flatten(it.fname.c_str(), 32u, todir, std::wcerr);
 			HA.print(std::wcout);
 		}
 
@@ -696,7 +648,7 @@ int wmain(const int argc, const wchar_t* argv[])
 			
 			setvbuf(fileOut, nullptr, _IOFBF, 128u << 20u);
 
-			for (const auto & ifile : SC::FileManagerList(todir + L"*." + ifilter))
+			for (const auto & ifile : appTR::FileManagerList(todir + L"*." + ifilter))
 			{
 				tmpvar = todir + ifile.fname;
 				if (_wfopen_s(&fileIn, tmpvar.c_str(), L"rbS"))
@@ -774,7 +726,7 @@ int wmain(const int argc, const wchar_t* argv[])
 
 			SplitFile	SF(256u);
 
-			SC::FileManagerList FML(todir + std::get<1u>(it));
+			appTR::FileManagerList FML(todir + std::get<1u>(it));
 
 			if ( !SF.openOutput( outputdir, std::to_wstring(std::get<2u>(it)), MaxBufferSpliceWritingMiB) )
 			{
@@ -900,27 +852,23 @@ int wmain(const int argc, const wchar_t* argv[])
 			}
 			else if (AVMT == AVMediaType::AVMEDIA_TYPE_DATA)		//"grb"	files
 			{
-				std::unique_ptr<GarbageRipper> GarbRipper = std::make_unique<GarbageRipper>();
-
 				LoadHashAccums(todir);
 
-				if (GarbRipper->RipFile(GFM.getCurrentFileName()))
+				if (appTR::GarbageRipper(GFM.getCurrentFileName()))
 					SaveHashAccums(todir);
 			}
 			else if (AVMT == AVMediaType::AVMEDIA_TYPE_SUBTITLE)	//"txt" files
 			{
-				std::unique_ptr<DictionaryRipper> DicRipper = std::make_unique<DictionaryRipper>();
-
 				LoadHashAccums(todir);
 
-				if (DicRipper->RipFile(GFM.getCurrentFileName()))
+				if (appTR::TextRipper(GFM.getCurrentFileName()))
 					SaveHashAccums(todir);
 			}
 			else
 			{
-				if (!defaultThreadPool)	defaultThreadPool	=	std::make_unique<ThreadPool>();
-				if (!GChemicalBurner)	GChemicalBurner		=	std::make_unique<ChemicalBurner>();
-				if (!GLayerRes)			GLayerRes			=	std::make_unique<LayersResources>();
+				if (!defaultThreadPool)			defaultThreadPool		=	std::make_unique<ThreadPool>();
+				if (!appTR::GChemicalBurner)	appTR::GChemicalBurner	=	std::make_unique<appTR::ChemicalBurner>();
+				if (!appTR::GLayerRes)			appTR::GLayerRes		=	std::make_unique<appTR::LayersResources>();
 				LoadResults(todir);
 				LoadHashAccums(todir);
 
