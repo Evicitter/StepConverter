@@ -6,10 +6,13 @@
 #include <sstream>
 #include <string>
 
-//#include <mutex>
+#include <mutex>
 #include <nmmintrin.h>
 
 #include <core/hashes/HashClasses.hpp>
+#include "FilesManager.hpp"
+
+namespace appTR {
 
 template<class HASHCLASS>
 class HashAccumulator
@@ -17,16 +20,13 @@ class HashAccumulator
 private:
 	typedef std::array<unsigned char, HASHCLASS::_HASHSIZE>		mytype;
 
-	//std::mutex				mylock;
-	//std::vector<mytype>		blocks;
-	FILE*					blocks;
-
+	std::mutex				mylock;
+	FileUnit				blocks;
 	std::wstring			myname;
 public:
 
-	HashAccumulator() : blocks(nullptr)
+	HashAccumulator() : blocks(L"")
 	{
-		//blocks.reserve(65536u * 2u); //131 072 frames ~(30fps) = 1 h 12 min
 		myname = std::wstring(L"GHI_") + VX::hash::getHashClassNameW<HASHCLASS>(HASHCLASS());
 	}
 
@@ -36,60 +36,40 @@ public:
 		objhash.start();
 		objhash.update(buf, nsize);
 		objhash.finish();
-#if 0
-		//version 1
-		{
-			std::lock_guard<std::mutex> ml(mylock);
-			size_t curidx = blocks.size();
-			blocks.resize(curidx + 1u);
-			objhash.print(blocks[curidx]);
-		}
-#elif 0
-		//version 2
-		mytype							reshash;
-		objhash.print(reshash);
-		{
-			std::lock_guard<std::mutex> ml(mylock);
-			blocks.emplace_back(reshash);
-		}
-#else
-		//version 3
-		fwrite(objhash.getHashPtr(), 1u, objhash.getHashSize(), blocks);
-#endif
+		
+		mylock.lock();
+		blocks.Write(objhash.getHashPtr(), objhash.getHashSize());
+		mylock.unlock();
 	}
 
-	bool load(const std::wstring& fname)
+	bool load(const std::wstring& outdirectory)
 	{
-		//blocks.clear();
-
-		if (_wfopen_s(&blocks, (fname + myname + L"_tmp_.story").c_str(), L"wb") )
-			throw std::runtime_error("Temporary file isn\'t create.");
-		else
-			setvbuf(blocks, nullptr, _IOFBF, 8u << 20u);
-
-		//std::ifstream ifsstory(fname + myname + L".story", std::ofstream::binary | std::ofstream::in);
-		//if (!(ifsstory && ifsstory.is_open()))
-		//	std::wcerr << "File \'" << fname << myname << ".story\' don\'t opened.\n";
-		//bret = ifsstory.good();
-		//ifsstory.close();
-
-		return true;
+		blocks.Rename(outdirectory + myname + L"_tmp_.story", true);
+		if (blocks.OpenWrite())
+		{
+			blocks.setDeleteOnClose(true);
+			//blocks.Prealloc(4u);
+			return true;
+		}
+		throw std::runtime_error("Temporary file isn\'t create.");
+		return false;
 	}
 
-	bool save(const std::wstring& fname, const time_t& timeinput) const
+	bool save(const std::wstring& outdirectory, const time_t& timeinput)
 	{
 		std::wostringstream	ss;
 		tm					stime;
 		unsigned int		counter = 0u;
 
-		fflush(blocks);
-		fclose(blocks);
+		blocks.setDeleteOnClose(false);
+		blocks.Flush();
+		blocks.Close();
 
 		do
 		{
 			ss.str(L"");
 			ss.fill(L'0');
-			ss << fname; // << L"HASHES\\";
+			ss << outdirectory; // << L"HASHES\\";
 
 			if (localtime_s(&stime, &timeinput) == 0)
 			{
@@ -114,25 +94,24 @@ public:
 			ss << '.' << myname;
 			++counter;
 		}
-		while( _wrename((fname + myname + L"_tmp_.story").c_str(), ss.str().c_str()) && (counter < 100u));
+		while ( !blocks.Rename(ss.str()) && (counter < 100u));
 
 		return true;
 	}
 
 	void merge(const std::wstring& fromname, const std::wstring& toappend)
 	{
-		FILE*	fileIn;
-		FILE*	fileOut;
+		FileUnit	fileIn(fromname);
+		FileUnit	fileOut(toappend + myname + L".story");
 
-		if (_wfopen_s(&fileIn, fromname.c_str(), L"rbS"))
+		if (!fileIn.OpenRead()) //_wfopen_s(&fileIn, fromname.c_str(), L"rbS")
 		{
 			std::wcerr << "File \'" << fromname << " access denied.\n";
 			return;
 		}
 
-		if (_wfopen_s(&fileOut, (toappend + myname + L".story").c_str(), L"ab"))
+		if (!fileOut.OpenAppend()) //_wfopen_s(&fileOut, (toappend + myname + L".story").c_str(), L"ab"))
 		{
-			fclose(fileIn);
 			std::wcerr << "File \'" << toappend << myname << ".story\' don\'t save.\n";
 			return;
 		}
@@ -141,37 +120,40 @@ public:
 		size_t			nread;
 
 		//file copy.
-		while ( nread = _fread_nolock_s(buffer, sizeof(buffer), 1, sizeof(buffer), fileIn) )
-						_fwrite_nolock (buffer,                 1,          nread, fileOut);
+		while ( nread = fileIn.Read(buffer, sizeof(buffer)) )
+						fileOut.Write(buffer, nread);
 		
-		fflush(fileOut);
-		fclose(fileOut);
-		fclose(fileIn);
+		fileOut.Flush();
 	}
 
 	void dump(const std::wstring& fname, std::wostream& out) const
 	{
-		//std::array<unsigned long long, 16u>	indexdestrib{0ull};
+		//std::array<unsigned long long, HASHCLASS::_HASHSIZE>	indexdestrib{0ull};
 		unsigned long long crc = 0x00000000ffffffffull;
 		unsigned long long countelems = 0ull;
 
-		std::ifstream ifsstory(fname + myname + L".story", std::ifstream::binary | std::ifstream::in);
-		if (ifsstory && ifsstory.is_open())
+		FileUnit infile(fname + myname + L".story");
+
+		if(infile.OpenRead())
 		{
-			mytype elem;
-			ifsstory.read((char*)&elem[0], elem.size());
-			while (ifsstory.gcount() == elem.size())
+			std::array< mytype, 4096u >	elems;
+			size_t	nread;
+			while (nread = infile.Read(elems.data(), elems.size() * elems[0].size()))
 			{
-				++countelems;
-				//++indexdestrib[elem.at(0) & (indexdestrib.size() - 1u)];
-				for (unsigned int x = 0; x < elem.size(); x += 8u)
-					crc = _mm_crc32_u64(crc, *reinterpret_cast<unsigned long long*>(&elem.at(x)));
-				ifsstory.read((char*)&elem[0], elem.size());
+				nread /= elems[0].size();
+				for (unsigned int i = 0u; i < nread; ++i)
+				{
+					++countelems;
+					//++indexdestrib[elem.at(0) & (indexdestrib.size() - 1u)];
+					for (unsigned int j = 0u; j < elems[0].size(); j += 8u)
+						crc = _mm_crc32_u64(crc, *reinterpret_cast<const unsigned long long*>(&elems[i].at(j)));
+				}
 			}
-			ifsstory.close();
+
+			infile.Close();
 
 			out << "\tCRC(";
-			out.width(2u); out << elem.size() << ',';
+			out.width(2u); out << elems[0].size() << ',';
 			out.width(8u); out << countelems << ") = " << std::hex;
 			out.width(8u); out << crc << std::dec << '\t';
 			//out << "index_destrib( ";
@@ -205,3 +187,5 @@ extern HashAccumulator<VX::hash::DRIB>		GHI_DRIB;
 extern HashAccumulator<VX::hash::AESDM>		GHI_AESDM;
 extern HashAccumulator<VX::hash::AESMMO2>	GHI_AESMMO2;
 extern HashAccumulator<VX::hash::AESHIROSE>	GHI_AESHIROSE;
+
+}

@@ -30,15 +30,6 @@
 #include "classSplitFile.hpp"
 #include "FilesManager.hpp"
 
-//128 bit hashes
-HashAccumulatorDummy<VX::hash::RHash>		GHI_RHash;
-
-//256 bit hashes
-HashAccumulator<VX::hash::DRIB>			GHI_DRIB;
-HashAccumulator<VX::hash::AESDM>		GHI_AESDM;
-HashAccumulator<VX::hash::AESMMO2>		GHI_AESMMO2;
-HashAccumulator<VX::hash::AESHIROSE>	GHI_AESHIROSE;
-
 static std::unique_ptr<ThreadPool> defaultThreadPool;
 static appTR::FilesManager GFM;
 static std::wstring	OutputDirectory;
@@ -67,11 +58,11 @@ public:
 
         appTR::GChemicalBurner->Saturate((const unsigned char*)buffer, bufsize);
 
-		GHI_RHash.update((const unsigned char*)buffer, bufsize);
-		GHI_DRIB.update((const unsigned char*)buffer, bufsize);
-		GHI_AESDM.update((const unsigned char*)buffer, bufsize);
-		GHI_AESMMO2.update((const unsigned char*)buffer, bufsize);
-		GHI_AESHIROSE.update((const unsigned char*)buffer, bufsize);
+		appTR::GHI_RHash.update((const unsigned char*)buffer, bufsize);
+		appTR::GHI_DRIB.update((const unsigned char*)buffer, bufsize);
+		appTR::GHI_AESDM.update((const unsigned char*)buffer, bufsize);
+		appTR::GHI_AESMMO2.update((const unsigned char*)buffer, bufsize);
+		appTR::GHI_AESHIROSE.update((const unsigned char*)buffer, bufsize);
 	}
 
 	void onFinish() override
@@ -144,20 +135,20 @@ public:
 		const unsigned char*	xptr_ = vb->getData();
 		const size_t			xsize = vb->getSize();
 
-		GHI_RHash.update(		xptr_, xsize);
-		GHI_DRIB.update(		xptr_, xsize);
-		GHI_AESDM.update(		xptr_, xsize);
-		GHI_AESMMO2.update(		xptr_, xsize);
-		GHI_AESHIROSE.update(	xptr_, xsize);
+		appTR::GHI_RHash.update(		xptr_, xsize);
+		appTR::GHI_DRIB.update(			xptr_, xsize);
+		appTR::GHI_AESDM.update(		xptr_, xsize);
+		appTR::GHI_AESMMO2.update(		xptr_, xsize);
+		appTR::GHI_AESHIROSE.update(	xptr_, xsize);
 
 		//const unsigned int part = 1024u;	//for(unsigned int part = 8192u; part <= xsize; part *= 2u)
 		//for (unsigned int i = 0u; i < xsize; i += part)
 		//{
-		//	GHI_AESHIROSE.update(	xptr_ + i, part);
-		//	GHI_RHash.update(		xptr_ + i, part);
-		//	GHI_DRIB.update(		xptr_ + i, part);
-		//	GHI_AESDM.update(		xptr_ + i, part);
-		//	GHI_AESMMO2.update(		xptr_ + i, part);
+		//	appTR::GHI_AESHIROSE.update(	xptr_ + i, part);
+		//	appTR::GHI_RHash.update(		xptr_ + i, part);
+		//	appTR::GHI_DRIB.update(		xptr_ + i, part);
+		//	appTR::GHI_AESDM.update(		xptr_ + i, part);
+		//	appTR::GHI_AESMMO2.update(		xptr_ + i, part);
 		//}
 
 		FreeVideoBuffer(std::unique_ptr<SVideoGrabber::VideoBuffer>(vb));
@@ -224,7 +215,7 @@ public:
 		defaultThreadPool->enqueue(&GenericVGRGB0_256x256::NumberCruncherLayerRes, this, xx);
 
 		if(	Progress.Update(clock())	)
-			Progress.print(std::wcout);
+			Progress.print(std::wcerr);
     }
 
 	unsigned int GetVideoBuffers() const override
@@ -241,12 +232,12 @@ static void LoadHashAccums(const std::wstring& todir)
 {
 	std::wcerr << "Load hashes [.";
 
-	GHI_RHash.load(todir);
+	appTR::GHI_RHash.load(todir);
 
-	GHI_DRIB.load(todir);
-	GHI_AESDM.load(todir);
-	GHI_AESMMO2.load(todir);
-	GHI_AESHIROSE.load(todir);
+	appTR::GHI_DRIB.load(todir);
+	appTR::GHI_AESDM.load(todir);
+	appTR::GHI_AESMMO2.load(todir);
+	appTR::GHI_AESHIROSE.load(todir);
 
 	std::wcerr << ".]" << std::endl;
 }
@@ -257,12 +248,12 @@ static void SaveHashAccums(const std::wstring& todir)
 
 	time_t	timeinput;
 	time(&timeinput);
-	GHI_RHash.save(todir, timeinput);
+	appTR::GHI_RHash.save(todir, timeinput);
 
-	GHI_DRIB.save(todir, timeinput);
-	GHI_AESDM.save(todir, timeinput);
-	GHI_AESMMO2.save(todir, timeinput);
-	GHI_AESHIROSE.save(todir, timeinput);
+	appTR::GHI_DRIB.save(todir, timeinput);
+	appTR::GHI_AESDM.save(todir, timeinput);
+	appTR::GHI_AESMMO2.save(todir, timeinput);
+	appTR::GHI_AESHIROSE.save(todir, timeinput);
 
 	std::wcerr << ".]" << std::endl;
 }
@@ -271,11 +262,8 @@ static void LoadResults(const std::wstring& todir)
 {
 	std::wcerr << "Load data [.";
 	
-	std::ifstream iLR(todir + L"GLayerRes.bin",			std::ofstream::binary | std::ofstream::in);
-	std::ifstream iGCB(todir + L"GChemicalBurner.bin",	std::ofstream::binary | std::ofstream::in);
-
-	if (appTR::GLayerRes)				appTR::GLayerRes->load(iLR);
-	if (appTR::GChemicalBurner)		appTR::GChemicalBurner->load(iGCB);
+	if (appTR::GLayerRes)		appTR::GLayerRes->load(todir + L"GLayerRes.bin");
+	if (appTR::GChemicalBurner)	appTR::GChemicalBurner->load(todir + L"GChemicalBurner.bin");
 	
 	std::wcerr << ".]" << std::endl;
 }
@@ -284,11 +272,8 @@ static void SaveResults(const std::wstring& todir)
 {
 	std::wcerr << "Save data [.";
 
-	std::ofstream iLR(todir + L"GLayerRes.bin",			std::ofstream::binary | std::ofstream::out);
-	std::ofstream iGCB(todir + L"GChemicalBurner.bin",	std::ofstream::binary | std::ofstream::out);
-
-	if (appTR::GChemicalBurner)	appTR::GChemicalBurner->save(iGCB);
-    if (appTR::GLayerRes)			appTR::GLayerRes->save(iLR);
+	if (appTR::GChemicalBurner)	appTR::GChemicalBurner->save(todir + L"GChemicalBurner.bin");
+    if (appTR::GLayerRes)		appTR::GLayerRes->save(todir + L"GLayerRes.bin");
 	std::wcerr << ".]" << std::endl;
 }
 
@@ -431,11 +416,11 @@ int wmain(const int argc, const wchar_t* argv[])
 		std::wcout << "dump : GLayerRes    :\n"; appTR::GLayerRes->dump(std::wcout);
 		std::wcout << std::endl;
 
-		std::wcout << "dump : GHI_RHash     :";	GHI_RHash.dump(todir,	std::wcout);		std::wcout << std::endl;
-		std::wcout << "dump : GHI_DRIB      :";	GHI_DRIB.dump(todir,	std::wcout);		std::wcout << std::endl;
-		std::wcout << "dump : GHI_AESDM     :";	GHI_AESDM.dump(todir,	std::wcout);		std::wcout << std::endl;
-		std::wcout << "dump : GHI_AESMMO2   :";	GHI_AESMMO2.dump(todir,	std::wcout);		std::wcout << std::endl;
-		std::wcout << "dump : GHI_AESHIROSE :";	GHI_AESHIROSE.dump(todir,	std::wcout);	std::wcout << std::endl;
+		std::wcout << "dump : GHI_RHash     :";	appTR::GHI_RHash.dump(todir,	std::wcout);		std::wcout << std::endl;
+		std::wcout << "dump : GHI_DRIB      :";	appTR::GHI_DRIB.dump(todir,	std::wcout);		std::wcout << std::endl;
+		std::wcout << "dump : GHI_AESDM     :";	appTR::GHI_AESDM.dump(todir,	std::wcout);		std::wcout << std::endl;
+		std::wcout << "dump : GHI_AESMMO2   :";	appTR::GHI_AESMMO2.dump(todir,	std::wcout);		std::wcout << std::endl;
+		std::wcout << "dump : GHI_AESHIROSE :";	appTR::GHI_AESHIROSE.dump(todir,	std::wcout);	std::wcout << std::endl;
 		std::wcout << std::endl;
         return 0;
     }
@@ -458,13 +443,11 @@ int wmain(const int argc, const wchar_t* argv[])
         
         {
 			appTR::ChemicalBurner CB;
-			std::ifstream iGCB(mergedir + L"GChemicalBurner.bin", std::ofstream::binary | std::ofstream::in);
-            if (CB.load(iGCB))        appTR::GChemicalBurner->merge(CB);
+            if (CB.load(mergedir + L"GChemicalBurner.bin"))	appTR::GChemicalBurner->merge(CB);
         }
         {
 			appTR::LayersResources LR;
-			std::ifstream iLR(mergedir + L"GLayerRes.bin", std::ofstream::binary | std::ofstream::in);
-            if (LR.load(iLR))        appTR::GLayerRes->merge(LR);
+            if (LR.load(mergedir + L"GLayerRes.bin"))		appTR::GLayerRes->merge(LR);
         }
         SaveResults(todir);
         return 0;
@@ -473,9 +456,7 @@ int wmain(const int argc, const wchar_t* argv[])
 	{
 		if (!appTR::GLayerRes)			appTR::GLayerRes = std::make_unique<appTR::LayersResources>();
 		
-		std::ifstream iLR(todir + L"GLayerRes.bin", std::ofstream::binary | std::ofstream::in);
-
-		if (appTR::GLayerRes && !appTR::GLayerRes->load(iLR))
+		if (appTR::GLayerRes && !appTR::GLayerRes->load(todir + L"GLayerRes.bin"))
 		{
 			std::wcerr << "File \'GLayerRes.bin\' don\'t load.\n";
 			return 1;
@@ -631,47 +612,67 @@ int wmain(const int argc, const wchar_t* argv[])
 													L"GHI_AESHIROSE"
 		};
 
-		unsigned char	buffer[65536u];
-		FILE*	fileOut;
-		FILE*	fileIn;		
+		unsigned char		buffer[65536u];
+		unsigned long long	sum_files_size = 0u;
 		size_t	nread;
+		size_t	nwcounter = 0u;
+		size_t	lastnwcounter = 0u;
+		clock_t lastclock = clock();
 
 		std::wstring	tmpvar;	tmpvar.reserve(256u);
 
 		for (auto& ifilter : iFilters)
 		{
-			if (_wfopen_s(&fileOut, (todir + ifilter + L".story").c_str(), L"ab"))
+			appTR::FileUnit	fileOut(todir + ifilter + L".story");
+
+			if(!fileOut.OpenAppend())
 			{
 				std::wcerr << "File \'" << todir << ifilter << ".story\' don\'t save.\n";
 				return 1;
 			}
-			
-			setvbuf(fileOut, nullptr, _IOFBF, 128u << 20u);
 
-			for (const auto & ifile : appTR::FileManagerList(todir + L"*." + ifilter))
+			appTR::FileManagerList listFiles(todir + L"*." + ifilter);
+			for (const auto & ifile : listFiles)
+				sum_files_size += ifile.fsize;
+
+			sum_files_size /= 1'048'576ull;
+
+			if (sum_files_size && !fileOut.Prealloc(sum_files_size))
+			{
+				std::wcerr << "File \'" << todir << ifilter << ".story\' out of disk space for preallocation.\n";
+				return 1;
+			}
+
+			for (const auto & ifile : listFiles)
 			{
 				tmpvar = todir + ifile.fname;
-				if (_wfopen_s(&fileIn, tmpvar.c_str(), L"rbS"))
+				appTR::FileUnit		fileIn(tmpvar);
+				if(!fileIn.OpenRead())
 				{
 					std::wcerr << "File \'" << tmpvar << " access denied.\n";
-					fclose(fileOut);
 					return 1;
 				}
 
 				//file copy.
-				while (nread = _fread_nolock_s(buffer, sizeof(buffer),		1,	sizeof(buffer), fileIn))
-							   _fwrite_nolock (buffer,						1,			 nread,	fileOut);
+				while (nread =	fileIn.Read(buffer, sizeof(buffer)))
+				{
+					nwcounter +=	fileOut.Write(buffer, nread);
 
-//WARNING =============================================================================================================================
-				//fflush(fileOut);
-//WARNING =============================================================================================================================
-				fclose(fileIn);
+					clock_t cclock = clock();
+					if (cclock - lastclock > CLOCKS_PER_SEC)
+					{
+						std::wcerr << '\r' << "write speed: [+" << (nwcounter - lastnwcounter) / 1'048'576u << "MiB/s]";
+						lastnwcounter = nwcounter;
+						lastclock = cclock;
+					}
+				}
 
-				_wremove(tmpvar.c_str());
+				fileOut.Flush();
+				fileIn.Close();
+				fileIn.Delete();
 			}
 
-			fflush(fileOut);
-			fclose(fileOut);
+			fileOut.Close();
 		}
 	}
 	else if (wcscmp(argv[1], L"-compile-split") == 0)

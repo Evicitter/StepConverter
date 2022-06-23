@@ -1,6 +1,7 @@
 ﻿#pragma once
 
-#include <fstream>
+#include <iostream>
+#include <string>
 #include <memory>
 
 namespace appTR
@@ -33,8 +34,8 @@ public:
 	void Saturate(const unsigned char* buf, size_t len);
 	void Finish();
 
-	bool load(std::istream& fname);
-	bool save(std::ostream& fname) const;
+	bool load(const std::wstring& fname);
+	bool save(const std::wstring& fname) const;
 	void merge(const ChemicalBurner& other);
 	void dump(std::wostream& out) const;
 
