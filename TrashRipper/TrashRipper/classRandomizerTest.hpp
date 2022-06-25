@@ -1,16 +1,11 @@
 ﻿#pragma once
 
-//#include <nmmintrin.h>
-#include <wmmintrin.h>
-
-#include <iostream>
 #include <mutex>
 #include <thread>
 #include <vector>
 #include <memory>
-#include <time.h>
 
-#include "classHashAccumulator.hpp"
+namespace appTR {
 
 class RandomizerTest
 {
@@ -23,6 +18,7 @@ public:
 
 	//#get	----------------------------------------------------------
 	unsigned int	getBufferSize() const {	return bufferSize;	}
+	unsigned int	getCountHashes() const { return counthashes; }
 	//----------------------------------------------------------------
 
 	//#set	----------------------------------------------------------
@@ -36,7 +32,6 @@ public:
 	bool			Start_RandomPerlin();			//3
 	//----------------------------------------------------------------
 
-public:
 	static unsigned long long	getRand(unsigned long long& icrc, unsigned long long lrand);
 
 protected:
@@ -48,3 +43,4 @@ protected:
 	unsigned int counthashes;
 	unsigned int bufferSize;
 };
+}
