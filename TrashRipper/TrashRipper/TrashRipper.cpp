@@ -1,38 +1,33 @@
-﻿#include <SDKDDKVer.h>
-
+﻿//aaa
+//aaa
+//aaa
 #include <locale>
 #include <codecvt>
 
-#include <io.h>
-#include <fcntl.h>
-
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <memory>
-
 #include <../ffmpegDecoder.hpp>
-
-#include <core/hashes/HashClasses.hpp>
 #include <core/utils/SpecialProgress.hpp>
-
+#include <core/hashes/HashClasses.hpp>
 #include <core/PlatformUtils.hpp>
+
+#include "TrashRipper.hpp"
+
+#include "classChemicalBurner.hpp"
+#include "classLayersResources.hpp"
+#include "classHashAccumulator.hpp"
+#include "classGarbageRipper.hpp"
+#include "classRandomizerTest.hpp"
+
+#include "classSplitFile.hpp"
+
+#include "FilesManager.hpp"
 
 //#include "_threads_/ThreadPoolWP.hpp"
 #include "_threads_/ThreadPool-master/ThreadPool.h"
 
-#include "classHashAnalysis.hpp"
-#include "classGarbageRipper.hpp"
-#include "classChemicalBurner.hpp"
-#include "classLayersResources.hpp"
-#include "classHashAccumulator.hpp"
-#include "classRandomizerTest.hpp"
-#include "classSplitFile.hpp"
-#include "FilesManager.hpp"
-
 static std::unique_ptr<ThreadPool> defaultThreadPool;
 static appTR::FilesManager GFM;
-static std::wstring	OutputDirectory;
+
+std::wstring	appTR::OutputDirectory;
 
 class GenericAGMono : public SAudioGrabber
 {
@@ -157,7 +152,7 @@ public:
 	void OnProccesX(std::unique_ptr<SVideoGrabber::VideoBuffer>&& vb) override
 	{
 		sumsize += vb->getSize();
-		SVideoGrabber::VideoBuffer* xx = vb.release();
+		SVideoGrabber::VideoBuffer* xx = vb.release();		
 		defaultThreadPool->enqueue(&GenericVGHashes::NumberCruncher, this, xx);
 	}
 };
@@ -228,7 +223,7 @@ public:
 	}
 };
 
-static void LoadHashAccums(const std::wstring& todir)
+void appTR::LoadHashAccums(const std::wstring& todir)
 {
 	std::wcerr << "Load hashes [.";
 
@@ -242,7 +237,7 @@ static void LoadHashAccums(const std::wstring& todir)
 	std::wcerr << ".]" << std::endl;
 }
 
-static void SaveHashAccums(const std::wstring& todir)
+void appTR::SaveHashAccums(const std::wstring& todir)
 {
 	std::wcerr << "Save hashes [.";
 
@@ -258,7 +253,7 @@ static void SaveHashAccums(const std::wstring& todir)
 	std::wcerr << ".]" << std::endl;
 }
 
-static void LoadResults(const std::wstring& todir)
+void appTR::LoadResults(const std::wstring& todir)
 {
 	std::wcerr << "Load data [.";
 	
@@ -268,7 +263,7 @@ static void LoadResults(const std::wstring& todir)
 	std::wcerr << ".]" << std::endl;
 }
 
-static void SaveResults(const std::wstring& todir)
+void appTR::SaveResults(const std::wstring& todir)
 {
 	std::wcerr << "Save data [.";
 
@@ -277,12 +272,12 @@ static void SaveResults(const std::wstring& todir)
 	std::wcerr << ".]" << std::endl;
 }
 
-void ShowVersion()
+static void ShowVersion()
 {
 	std::wcerr << "TrashRipper (X86-64): version : 0.10.262 (" << __DATE__ << ' ' << __TIME__ << ')' << std::endl;
 }
 
-void ShowBanner()
+static void ShowBanner()
 {
 	std::wcerr << "===========================================" << std::endl;
 	ShowVersion();
@@ -296,7 +291,7 @@ void ShowBanner()
 	std::wcerr << "===========================================" << std::endl;
 }
 
-void HelpMessage()
+static void HelpMessage()
 {
 	//#if defined(__x86_64) || defined(__x86_64__) || defined (__amd64) || defined (__amd64__) || defined (_M_AMD64) || defined (_M_X64)
 	//std::wcerr << "Audio test raw data ->ffplay -f s16le -ac 1 -ar 44100 audio.bin" << std::endl;
@@ -305,68 +300,16 @@ void HelpMessage()
 	std::wcerr << "-dump" << std::endl;
 	std::wcerr << "-merge" << std::endl;
 	std::wcerr << "-check" << std::endl;
-	std::wcerr << "-flatten" << std::endl;
+	std::wcerr << "-unique" << std::endl;
 	std::wcerr << "-random" << std::endl;
 	std::wcerr << "-layers-export" << std::endl;
 	std::wcerr << "-compile" << std::endl;
-	std::wcerr << "-compile-split" << std::endl;
-	std::wcerr << "-split" << std::endl;
+	std::wcerr << "-compile-split [opt outputDirSplitFiles] [opt sizeBufferSparseMiB=16]" << std::endl;
+	std::wcerr << "-split           : example: -split <inputfile> <outdir> <numFiles range(2:256)> <size_block_bytes range(1:65536)>" << std::endl;
 	std::wcerr << "\t-list-delete            : Processing files in current directory and deleting ever file after processed." << std::endl;
 	std::wcerr << "\t-file <filename>        : One file processing." << std::endl;
 	std::wcerr << "\t-file-delete <filename> : One file processing and delete file after processed." << std::endl;
 }
-
-class TimeInOut
-{
-protected:
-	time_t starttime;
-public:
-	TimeInOut()
-	{
-		tm		stime;
-		time(&starttime);
-		if (localtime_s(&stime, &starttime) == 0)
-		{
-			std::wcerr << "start:> ";
-			showTime(stime);
-			std::wcerr << std::endl;
-		}
-	}
-	~TimeInOut()
-	{
-		tm		stime;
-		time(&starttime);
-		if (localtime_s(&stime, &starttime) == 0)
-		{
-			std::wcerr << "end:> ";
-			showTime(stime);
-			std::wcerr << std::endl;
-		}
-	}
-	time_t	getTime() const	{	return	starttime;	}
-
-	void	ShowNow(std::wostream& out = std::wcerr)	const
-	{
-		tm		stime;
-		time_t	ctime;
-		time(&ctime);
-		if (localtime_s(&stime, &ctime) == 0)
-			showTime(stime);
-	}
-
-protected:
-	void	showTime(const tm& stime, std::wostream& out = std::wcerr)	const
-	{
-		wchar_t	oldfill	=	out.fill('0');
-		out.width(2u);	out << stime.tm_mday << '.';
-		out.width(2u);	out << (stime.tm_mon + 1) << '.';
-						out << (stime.tm_year + 1900) << '-';
-		out.width(2u);	out << stime.tm_hour << ':';
-		out.width(2u);	out << stime.tm_min << ':';
-		out.width(2u);	out << stime.tm_sec;
-		out.fill(oldfill);
-	}
-};
 
 int wmain(const int argc, const wchar_t* argv[])
 {
@@ -393,7 +336,7 @@ int wmain(const int argc, const wchar_t* argv[])
 
 	ShowVersion();
 
-	TimeInOut	registerTIO;
+	appTR::TimeInOut	registerTIO;
 	srand(static_cast<unsigned int>(registerTIO.getTime()));
 
     std::wstring todir =	VX::Platform::getEnvironmentVariable(L"RESPATH");
@@ -404,203 +347,54 @@ int wmain(const int argc, const wchar_t* argv[])
     else
         std::wcerr << "RESPATH = " << todir << std::endl;
 
-	OutputDirectory = todir;
+	appTR::OutputDirectory = todir;
 
-    if (wcscmp(argv[1], L"-dump") == 0)
-    {
-		if (!appTR::GChemicalBurner)	appTR::GChemicalBurner = std::make_unique<appTR::ChemicalBurner>();
-		if (!appTR::GLayerRes)			appTR::GLayerRes		= std::make_unique<appTR::LayersResources>();
-		LoadResults(todir);
-		std::wcout << "dump : GChemicalBurner:\n"; appTR::GChemicalBurner->dump(std::wcout);
-		std::wcout << std::endl;
-		std::wcout << "dump : GLayerRes    :\n"; appTR::GLayerRes->dump(std::wcout);
-		std::wcout << std::endl;
-
-		std::wcout << "dump : GHI_RHash     :";	appTR::GHI_RHash.dump(todir,	std::wcout);		std::wcout << std::endl;
-		std::wcout << "dump : GHI_DRIB      :";	appTR::GHI_DRIB.dump(todir,	std::wcout);		std::wcout << std::endl;
-		std::wcout << "dump : GHI_AESDM     :";	appTR::GHI_AESDM.dump(todir,	std::wcout);		std::wcout << std::endl;
-		std::wcout << "dump : GHI_AESMMO2   :";	appTR::GHI_AESMMO2.dump(todir,	std::wcout);		std::wcout << std::endl;
-		std::wcout << "dump : GHI_AESHIROSE :";	appTR::GHI_AESHIROSE.dump(todir,	std::wcout);	std::wcout << std::endl;
-		std::wcout << std::endl;
-        return 0;
-    }
-    else if(wcscmp(argv[1], L"-merge") == 0)
-    {
-		if (!appTR::GChemicalBurner)	appTR::GChemicalBurner	= std::make_unique<appTR::ChemicalBurner>();
-		if (!appTR::GLayerRes)			appTR::GLayerRes		= std::make_unique<appTR::LayersResources>();
-		LoadResults(todir);
-
-        std::wstring mergedir;
-        std::wcerr << "Input directory from other files merge to RESPATH<" << todir << "> envvar.\n";
-        std::wcin >> mergedir;
-        if ((mergedir.size() > 3) && (mergedir.back() != L'\\' && mergedir.back() != L'/'))
-             mergedir += L'\\';
-        
-			//GHI_RHash.merge(mergedir);
-			//GHI_DRIB.merge(mergedir);
-			//GHI_AESMMO2.merge(mergedir);
-			//GHI_AESHIROSE.merge(mergedir);
-        
-        {
-			appTR::ChemicalBurner CB;
-            if (CB.load(mergedir + L"GChemicalBurner.bin"))	appTR::GChemicalBurner->merge(CB);
-        }
-        {
-			appTR::LayersResources LR;
-            if (LR.load(mergedir + L"GLayerRes.bin"))		appTR::GLayerRes->merge(LR);
-        }
-        SaveResults(todir);
-        return 0;
-    }
-	else if (wcscmp(argv[1], L"-layers-export") == 0)
+    if		(!wcscmp(argv[1], L"-dump"))			return appTR::ShowDump();
+    else if	(!wcscmp(argv[1], L"-merge"))			return appTR::MergeResults();
+	else if (!wcscmp(argv[1], L"-export-layers"))	return appTR::ExportLayers();
+	else if (!wcscmp(argv[1], L"-random"))			return appTR::doRandom(registerTIO);
+	else if (!wcscmp(argv[1], L"-check"))			return appTR::Check();
+	else if (!wcscmp(argv[1], L"-unique"))			return appTR::Unique();
+	else if (!wcscmp(argv[1], L"-split"))
 	{
-		if (!appTR::GLayerRes)			appTR::GLayerRes = std::make_unique<appTR::LayersResources>();
-		
-		if (appTR::GLayerRes && !appTR::GLayerRes->load(todir + L"GLayerRes.bin"))
+		std::wstringstream	wss_converter;
+		std::wstring	openfile, outdir;
+		size_t			element_size = 0;
+		size_t			countfiles = 0;
+
+		if (argc <= 5)
 		{
-			std::wcerr << "File \'GLayerRes.bin\' don\'t load.\n";
+			std::wcerr << "invalid count params. -split <file name> <outdir (@ use for curdir)> <elem_size> <count_files>" << std::endl;
 			return 1;
 		}
-		appTR::GLayerRes->layers_export(todir);
-		return 0;
-	}
-	else if (wcscmp(argv[1], L"-split") == 0)
-	{
-		std::wstring	openfile, outdir;
-		size_t			element_size = 32u;
-		size_t			countfiles = 32u;
 
-		if(argc > 2)
-			openfile = argv[2];
-		else
-		{
-			std::wcerr << "open file name = ";
-			std::wcin >> openfile;
-		}
-
-		if (argc > 3)
-			outdir = argv[3];
-		else
-		{
-			std::wcerr << "output directory <@ is current dir> = ";
-			std::wcin >> outdir;
-		}
+		openfile = argv[2];
+		outdir = argv[3];
 
 		if (outdir.compare(L"@") == 0)
 			outdir.clear();
 
-		std::wstringstream	wss_converter;
-
-		if(argc > 4)
+		wss_converter.clear();
+		wss_converter << argv[4]; //countfiles = static_cast<size_t>(std::wcstoull(argv[4], nullptr, 10));
+		wss_converter >> countfiles;
+		
+		if(countfiles < 2 || countfiles > 256)
 		{
-			wss_converter.clear();
-			wss_converter << argv[4]; //countfiles = static_cast<size_t>(std::wcstoull(argv[4], nullptr, 10));
-			wss_converter >> countfiles;
-		}
-		else
-		{
-			std::wcerr << "how count output files (default: 32, range: 2->256) = ";
-			std::wcin >> countfiles;
-		}
-
-		countfiles = countfiles >	2u	? countfiles : 2u;
-		countfiles = countfiles < 256u	? countfiles : 256u;
-
-		if(argc > 5)
-		{
-			wss_converter.clear();
-			wss_converter << argv[5]; //element_size = static_cast<size_t>(std::wcstoull(argv[5], nullptr, 10));
-			wss_converter >> element_size;
-		}
-		else
-		{
-			std::wcerr << "element size (default: 32, range: 1->65536) = ";
-			std::wcin >> element_size;
-		}
-
-		element_size = element_size ? element_size : 1u;
-		element_size = element_size <= 65536 ? element_size : 65536;
-
-		SplitFile	SF(countfiles);
-
-		if(!SF.openInputFile(openfile))
-		{	std::wcerr << "Can\'t open file!" << std::endl;	return 1;	}
-
-		if(!SF.openOutput(outdir, L"32"))
-		{	std::wcerr << "Can\'t find output dir or create files!" << std::endl;	return 1;	}
-
-		if(SF.Split(element_size))
-		{
-			std::wcerr << "successful complete!" << std::endl;
-			return 0;
-		}
-		else
-		{
-			std::wcerr << "operation uncomplete!" << std::endl;
+			std::wcerr << "how count output files (range: 2->256)" << std::endl;
 			return 1;
 		}
-	}
-	else if (wcscmp(argv[1], L"-check") == 0)
-	{
-		{
-			HashAnalysis	HA;
-			HA.check(L"GHI_RHash.story",		16u, todir, std::wcerr);
 
-			HA.check(L"GHI_DRIB.story",			32u, todir, std::wcerr);
-			HA.check(L"GHI_AESDM.story",		32u, todir, std::wcerr);
-			HA.check(L"GHI_AESMMO2.story",		32u, todir, std::wcerr);
-			HA.check(L"GHI_AESHIROSE.story",	32u, todir, std::wcerr);
-			HA.dump(std::wcerr);
-			HA.print(std::wcout);
+		wss_converter.clear();
+		wss_converter << argv[5]; //element_size = static_cast<size_t>(std::wcstoull(argv[5], nullptr, 10));
+		wss_converter >> element_size;
+		
+		if(element_size < 4u || element_size > 65536u)
+		{
+			std::wcerr << "element size (range: 4->65536)" << std::endl;
+			return 1;
 		}
 
-		//FOR 16 bytes blocks
-		{
-			HashAnalysis	HA;
-			for (const auto & it : appTR::FileManagerList((todir + L"GHI_16_*.story").c_str()))
-				HA.check(it.fname.c_str(), 16u, todir, std::wcerr);
-			HA.print(std::wcout);
-		}
-
-		//FOR 32 bytes blocks
-		{
-			HashAnalysis	HA;
-			for (const auto & it : appTR::FileManagerList((todir + L"GHI_32_*.story").c_str()))
-				HA.check(it.fname.c_str(),	32u,	todir, std::wcerr);
-			HA.print(std::wcout);
-		}
-		return 0;
-	}
-	else if (wcscmp(argv[1], L"-flatten") == 0)
-	{
-		{
-			HashAnalysis	HA;
-			HA.flatten(L"GHI_RHash.story",		16u, todir, std::wcerr);
-
-			HA.flatten(L"GHI_DRIB.story",		32u, todir, std::wcerr);
-			HA.flatten(L"GHI_AESDM.story",		32u, todir, std::wcerr);
-			HA.flatten(L"GHI_AESMMO2.story",	32u, todir, std::wcerr);
-			HA.flatten(L"GHI_AESHIROSE.story",	32u, todir, std::wcerr);
-			HA.print(std::wcout);
-		}
-
-		//FOR 16 bytes blocks
-		{
-			HashAnalysis	HA;
-			for (const auto & it : appTR::FileManagerList((todir + L"GHI_16_*.story").c_str()))
-				HA.check(it.fname.c_str(), 16u, todir, std::wcerr);
-			HA.print(std::wcout);
-		}
-
-		//FOR 32 bytes blocks
-		{
-			HashAnalysis	HA;
-			for (const auto & it : appTR::FileManagerList((todir + L"GHI_32_*.story").c_str()))
-				HA.flatten(it.fname.c_str(), 32u, todir, std::wcerr);
-			HA.print(std::wcout);
-		}
-
-		return 0;
+		return appTR::Split(openfile, outdir, countfiles, element_size);
 	}
 	else if (wcscmp(argv[1], L"-compile") == 0)
 	{
@@ -659,9 +453,9 @@ int wmain(const int argc, const wchar_t* argv[])
 					nwcounter +=	fileOut.Write(buffer, nread);
 
 					clock_t cclock = clock();
-					if (cclock - lastclock > CLOCKS_PER_SEC)
+					if ((cclock - lastclock) > CLOCKS_PER_SEC)
 					{
-						std::wcerr << '\r' << "write speed: [+" << (nwcounter - lastnwcounter) / 1'048'576u << "MiB/s]";
+						std::wcerr << '\r' << "write speed: [+" << (nwcounter - lastnwcounter) / 1024u << "KiB/s]         ";
 						lastnwcounter = nwcounter;
 						lastclock = cclock;
 					}
@@ -674,6 +468,7 @@ int wmain(const int argc, const wchar_t* argv[])
 
 			fileOut.Close();
 		}
+		std::wcerr << std::endl;
 	}
 	else if (wcscmp(argv[1], L"-compile-split") == 0)
 	{	
@@ -759,42 +554,6 @@ int wmain(const int argc, const wchar_t* argv[])
 			}
 		}
 	}
-	else if (wcscmp(argv[1], L"-random") == 0)
-	{
-		unsigned int bufferSize=0u;
-		unsigned int input1=1024u;
-		
-		std::wcerr << "Input count hashes: ";
-		std::wcin >> input1;
-		std::wcerr << "\nSelected count hashes        = " << input1 << '\n';
-
-		std::wcerr << "\nInput buffer size (1KB < x < 4096KB) in KByte: ";
-		std::wcin >>	bufferSize;
-						bufferSize = bufferSize * 1024u;			//to bytes and to unsigned int
-
-		RandomizerTest RT(input1, bufferSize);
-
-		std::wcerr << "\nSelected bufferSize (bytes)  = " << RT.getBufferSize() << '\n';
-		std::wcerr << "Select random algorithm:\n\t0 - RandomSequence.\n\t1 - RandomOneBit.\n\t2 - RandomTargetWin.\n\t3 - RandomPerlin.\n";
-		std::wcin >>	input1;
-						input1 = input1 <= 3u ? input1 : 3u;
-
-		std::wcerr << "\nSelected random algorithm    = " << input1 << '\n';
-
-		RT.setSeed(registerTIO.getTime());
-
-		LoadHashAccums(todir);
-		switch(input1)
-		{
-			case 0u: RT.Start_RandomSequence(); break;
-			case 1u: RT.Start_RandomOneBit(); break;
-			case 2u: RT.Start_RandomTargetWin(); break;
-			case 3u: RT.Start_RandomPerlin(); break;
-			default: RT.Start_RandomSequence(); break;
-		}
-		SaveHashAccums(todir);
-		return 0;
-	}
 	else if (wcscmp(argv[1], L"-list-delete") == 0)
 	{
 		GFM.setScanFiles(true);
@@ -853,25 +612,25 @@ int wmain(const int argc, const wchar_t* argv[])
 			}
 			else if (AVMT == AVMediaType::AVMEDIA_TYPE_DATA)		//"grb"	files
 			{
-				LoadHashAccums(todir);
+				appTR::LoadHashAccums(todir);
 
 				if (appTR::GarbageRipper(GFM.getCurrentFileName()))
-					SaveHashAccums(todir);
+					appTR::SaveHashAccums(todir);
 			}
 			else if (AVMT == AVMediaType::AVMEDIA_TYPE_SUBTITLE)	//"txt" files
 			{
-				LoadHashAccums(todir);
+				appTR::LoadHashAccums(todir);
 
 				if (appTR::TextRipper(GFM.getCurrentFileName()))
-					SaveHashAccums(todir);
+					appTR::SaveHashAccums(todir);
 			}
 			else
 			{
 				if (!defaultThreadPool)			defaultThreadPool		=	std::make_unique<ThreadPool>();
 				if (!appTR::GChemicalBurner)	appTR::GChemicalBurner	=	std::make_unique<appTR::ChemicalBurner>();
 				if (!appTR::GLayerRes)			appTR::GLayerRes		=	std::make_unique<appTR::LayersResources>();
-				LoadResults(todir);
-				LoadHashAccums(todir);
+				appTR::LoadResults(todir);
+				appTR::LoadHashAccums(todir);
 
 				GenericAGMono gagm;
 				GenericVGHashes gvhash;
@@ -897,8 +656,8 @@ int wmain(const int argc, const wchar_t* argv[])
 				std::wcerr << std::endl;
 				std::wcerr << "Time elapsed: " << dec.getElapsedTime() << " ( " << (static_cast<double>(dec.getElapsedTime()) / 1000000.0 / 60.0) << " )min" << std::endl;
 
-				SaveResults(todir);
-				SaveHashAccums(todir);
+				appTR::SaveResults(todir);
+				appTR::SaveHashAccums(todir);
 			}
 		
 			std::wcerr << "DeleteCurrentFile(\"" << GFM.getCurrentFileName() << "\") = " << GFM.DeleteCurrentFile() << std::endl << std::endl;
@@ -911,4 +670,178 @@ int wmain(const int argc, const wchar_t* argv[])
 		return -1;
 	}
     return 0;
+}
+
+//  ██████   █████  ███    ██ ██████   ██████  ███    ███ 
+//  ██   ██ ██   ██ ████   ██ ██   ██ ██    ██ ████  ████ 
+//  ██████  ███████ ██ ██  ██ ██   ██ ██    ██ ██ ████ ██ 
+//  ██   ██ ██   ██ ██  ██ ██ ██   ██ ██    ██ ██  ██  ██ 
+//  ██   ██ ██   ██ ██   ████ ██████   ██████  ██      ██ 
+//                                                        
+//                                                        
+int appTR::doRandom(TimeInOut& tio, const bool bShowHelp)
+{
+	unsigned int bufferSize = 0u;
+	unsigned int input1 = 1024u;
+
+	std::wcerr << "Input count hashes: ";
+	std::wcin >> input1;
+	std::wcerr << "\nSelected count hashes        = " << input1 << '\n';
+
+	std::wcerr << "\nInput buffer size (1KB < x < 4096KB) in KByte: ";
+	std::wcin >> bufferSize;
+	bufferSize = bufferSize * 1024u;			//to bytes and to unsigned int
+
+	appTR::RandomizerTest RT(input1, bufferSize);
+
+	std::wcerr << "\nSelected bufferSize (bytes)  = " << RT.getBufferSize() << '\n';
+	std::wcerr << "Select random algorithm:\n\t0 - RandomSequence.\n\t1 - RandomOneBit.\n\t2 - RandomTargetWin.\n\t3 - RandomPerlin.\n";
+	std::wcin >> input1;
+	input1 = input1 <= 3u ? input1 : 3u;
+
+	std::wcerr << "\nSelected random algorithm    = " << input1 << '\n';
+
+	RT.setSeed(tio.getTime());
+
+	LoadHashAccums(OutputDirectory);
+	switch (input1)
+	{
+	case 0u: RT.Start_RandomSequence(); break;
+	case 1u: RT.Start_RandomOneBit(); break;
+	case 2u: RT.Start_RandomTargetWin(); break;
+	case 3u: RT.Start_RandomPerlin(); break;
+	default: RT.Start_RandomSequence(); break;
+	}
+	SaveHashAccums(OutputDirectory);
+	return 0;
+}
+
+
+#include "classHashAnalysis.hpp"
+
+//   ██████ ██   ██ ███████  ██████ ██   ██ 
+//  ██      ██   ██ ██      ██      ██  ██  
+//  ██      ███████ █████   ██      █████   
+//  ██      ██   ██ ██      ██      ██  ██  
+//   ██████ ██   ██ ███████  ██████ ██   ██ 
+int appTR::Check(const bool bShowHelp)
+{
+	{
+		HashAnalysis	HA;
+		HA.check(L"GHI_RHash.story", 16u, OutputDirectory, std::wcerr);
+
+		HA.check(L"GHI_DRIB.story", 32u, OutputDirectory, std::wcerr);
+		HA.check(L"GHI_AESDM.story", 32u, OutputDirectory, std::wcerr);
+		HA.check(L"GHI_AESMMO2.story", 32u, OutputDirectory, std::wcerr);
+		HA.check(L"GHI_AESHIROSE.story", 32u, OutputDirectory, std::wcerr);
+		HA.dump(std::wcerr);
+		HA.print(std::wcout);
+	}
+
+	//FOR 16 bytes blocks
+	{
+		HashAnalysis	HA;
+		for (const auto & it : appTR::FileManagerList((OutputDirectory + L"GHI_16_*.story").c_str()))
+			HA.check(it.fname.c_str(), 16u, OutputDirectory, std::wcerr);
+		HA.print(std::wcout);
+	}
+
+	//FOR 32 bytes blocks
+	{
+		HashAnalysis	HA;
+		for (const auto & it : appTR::FileManagerList((OutputDirectory + L"GHI_32_*.story").c_str()))
+			HA.check(it.fname.c_str(), 32u, OutputDirectory, std::wcerr);
+		HA.print(std::wcout);
+	}
+	return 0;
+}
+
+
+
+
+//  ██    ██ ███    ██ ██  ██████  ██    ██ ███████ 
+//  ██    ██ ████   ██ ██ ██    ██ ██    ██ ██      
+//  ██    ██ ██ ██  ██ ██ ██    ██ ██    ██ █████   
+//  ██    ██ ██  ██ ██ ██ ██ ▄▄ ██ ██    ██ ██      
+//   ██████  ██   ████ ██  ██████   ██████  ███████ 
+int appTR::Unique(const bool bShowHelp)
+{
+	{
+		HashAnalysis	HA;
+		HA.unique(L"GHI_RHash.story", 16u, OutputDirectory, std::wcerr);
+
+		HA.unique(L"GHI_DRIB.story", 32u, OutputDirectory, std::wcerr);
+		HA.unique(L"GHI_AESDM.story", 32u, OutputDirectory, std::wcerr);
+		HA.unique(L"GHI_AESMMO2.story", 32u, OutputDirectory, std::wcerr);
+		HA.unique(L"GHI_AESHIROSE.story", 32u, OutputDirectory, std::wcerr);
+		HA.print(std::wcout);
+	}
+
+	//FOR 16 bytes blocks
+	{
+		HashAnalysis	HA;
+		for (const auto & it : appTR::FileManagerList((OutputDirectory + L"GHI_16_*.story").c_str()))
+			HA.check(it.fname.c_str(), 16u, OutputDirectory, std::wcerr);
+		HA.print(std::wcout);
+	}
+
+	//FOR 32 bytes blocks
+	{
+		HashAnalysis	HA;
+		for (const auto & it : appTR::FileManagerList((OutputDirectory + L"GHI_32_*.story").c_str()))
+			HA.unique(it.fname.c_str(), 32u, OutputDirectory, std::wcerr);
+		HA.print(std::wcout);
+	}
+	return 0;
+}
+
+
+
+
+
+
+
+
+appTR::TimeInOut::TimeInOut()
+{
+	tm		stime;
+	time(&starttime);
+	if (localtime_s(&stime, &starttime) == 0)
+	{
+		std::wcerr << "start:> ";
+		printTime(stime, std::wcerr);
+		std::wcerr << std::endl;
+	}
+}
+appTR::TimeInOut::~TimeInOut()
+{
+	tm		stime;
+	time(&starttime);
+	if (localtime_s(&stime, &starttime) == 0)
+	{
+		std::wcerr << "end:> ";
+		printTime(stime, std::wcerr);
+		std::wcerr << std::endl;
+	}
+}
+
+void	appTR::TimeInOut::ShowNow(std::wostream& out)	const
+{
+	tm		stime;
+	time_t	ctime;
+	time(&ctime);
+	if (localtime_s(&stime, &ctime) == 0)
+		printTime(stime, out);
+}
+
+void	appTR::TimeInOut::printTime(const tm& stime, std::wostream& out)	const
+{
+	wchar_t	oldfill = out.fill('0');
+	out.width(2u);	out << stime.tm_mday << '.';
+	out.width(2u);	out << (stime.tm_mon + 1) << '.';
+	out << (stime.tm_year + 1900) << '-';
+	out.width(2u);	out << stime.tm_hour << ':';
+	out.width(2u);	out << stime.tm_min << ':';
+	out.width(2u);	out << stime.tm_sec;
+	out.fill(oldfill);
 }
