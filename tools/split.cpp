@@ -1,93 +1,99 @@
-//clang++ split.cpp C:\VirtualEngine\sources\core\_ansi_\FilesManagerANSI.cpp -IC:\VirtualEngine\include -O3 -o split.exe
-
-#include <core/FilesManager.hpp>
+//clang++ split.cpp C:\VirtualEngine\sources\core\_ansi_\FilesANSI.cpp -IC:\VirtualEngine\include -O3 -o split.exe
+//clang++ split.cpp C:\VirtualEngine\sources\core\_win_\FilesWindows.cpp -IC:\VirtualEngine\include -O3 -o split.exe
+#include <core/Files.hpp>
 
 #include <sstream>
 #include <string>
-
-static std::wstring			openname;
-static std::wstring			outdir;
+#include <memory>
 
 int wmain(const int argc, const wchar_t* argv[])
 {
 	std::wstringstream	wss_converter;
-	std::wstring		openfile, outdir;
+	std::wstring		openname;
+	std::wstring		outdir;
+	std::wstring		writename;
 	size_t				element_size = 0;
 	size_t				countfiles = 0;
 
-	if (argc <= 5)
+	if (argc < 5)
 	{
 		std::wcerr << "invalid count params. -split <file name> <outdir (@ use for curdir)> <elem_size> <count_files>" << std::endl;
 		return 1;
 	}
 
-	openfile = argv[2];
-	outdir = argv[3];
+	openname	= argv[1];
+	outdir 		= argv[2];
 
+	if ((outdir.size() > 3u) && (outdir.back() != L'\\' && outdir.back() != L'/'))
+		outdir += L'\\';
+	
 	if (outdir.compare(L"@") == 0)
 		outdir.clear();
 
-	wss_converter.clear();
-	wss_converter << argv[4];		//countfiles = static_cast<size_t>(std::wcstoull(argv[4], nullptr, 10));
-	wss_converter >> countfiles;
-	
-	if(countfiles < 2 || countfiles > 256)
-	{
-		std::wcerr << "how count output files (range: 2->256)" << std::endl;
-		return 1;
-	}
-
-	wss_converter.clear();
-	wss_converter << argv[5]; //element_size = static_cast<size_t>(std::wcstoull(argv[5], nullptr, 10));
-	wss_converter >> element_size;
-	
+	std::wistringstream(argv[3]) >> element_size;
 	if(element_size < 4u || element_size > 65536u)
 	{
 		std::wcerr << "element size (range: 4->65536)" << std::endl;
 		return 1;
 	}
-		
-	std::vector<VX::FileUnit>	outputFiles;
-				VX::FileUnit	inputFile(openname);
-
+	
+	std::wistringstream(argv[4]) >> countfiles;
+	if(countfiles < 2 || countfiles > 256)
+	{
+		std::wcerr << "how count output files (range: 2->256)" << std::endl;
+		return 1;
+	}	
+	
+	VX::FileUnit								inputFile(openname);
+	std::vector<std::unique_ptr<VX::FileUnit>>	outputFiles;
+	
 	if(!inputFile.OpenRead())
 	{
 		std::wcerr << "error: can\'t open file <" << openname << '>' << std::endl;
 		return 1;
 	}
-		
-	// std::wstring			writename;
 	
-	// for(unsigned int i=0u; i<32u; ++i)
-	// {
-		// writename.clear();
-		
-		// writename = outdir + L'\\';		
-		// writename += L"GHI_32_";
-		// if(i<10)
-			// writename += '0';
-		// writename += std::to_wstring(i);
-		// writename += L".story";
-		
-		// if( _wfopen_s(&wfile[i], writename.c_str(), L"ab") )	return 2 + i;
-		
-		// setvbuf(wfile[i], nullptr, _IOFBF, 512u << 20u);
-	// }
+	writename.reserve(32u);
+	outputFiles.reserve(countfiles);
+	
+	for(unsigned int i=0u; i<countfiles; ++i)
+	{
+		writename.clear();
+		if(!outdir.empty())
+			writename = outdir + L"\\";
+		writename += L"SPLIT_";
+		if(i<100)	writename += L'0';
+		if(i<10)	writename += L'0';
+		writename += std::to_wstring(i);
+		writename += L".story";
+		outputFiles.emplace_back( std::make_unique<VX::FileUnit>(writename) );
+		if(outputFiles.back()->OpenWrite())
+		{
+			//outputFiles.back()->Prealloc();
+			outputFiles.back()->setDeleteOnClose(true);
+		}
+		else
+		{
+			std::wcerr << "error: can\'t write file <" << writename << '>' << std::endl;
+			return 1;
+		}
+	}
 
-	// alignas(16u)	unsigned int	buffer[4u];
-	// size_t nread;
-	// while( (nread = _fread_nolock_s(buffer, sizeof(buffer), 1, sizeof(buffer), hfile)) == sizeof(buffer) )
-	// {
-		// unsigned int ind = buffer[0u] & 31u;
-		// _fwrite_nolock(buffer, 1, sizeof(buffer), wfile[ind]);
-	// }
+	alignas(16u)	unsigned char	buffer[65536u];
+	size_t							nread;
+	while( (nread = inputFile.Read(buffer, element_size)) == element_size )
+	{
+		unsigned int ind = static_cast<unsigned int>(buffer[0u]) % countfiles;
+		outputFiles[ind]->Write(buffer, element_size);
+	}
+	inputFile.Close();
 	
-	// for(unsigned int i=0u; i<32u; ++i)	
-	// {
-		// fflush(wfile[i]);
-		// fclose(wfile[i]);
-	// }
+	for(auto& ofile : outputFiles)
+	{
+		ofile->Flush();
+		ofile->setDeleteOnClose(false);
+		ofile->Close();
+	}
 	
-	// fclose(hfile);
-	// return 0;
+	return 0;
 }
