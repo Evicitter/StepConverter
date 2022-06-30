@@ -33,7 +33,8 @@ extern void SaveResults(const std::wstring& todir);
 extern int ShowDump(const bool bShowHelp = false);
 extern int MergeResults(const bool bShowHelp = false);
 extern int ExportLayers(const bool bShowHelp = false);
-extern int Split(const std::wstring& openfile, const std::wstring& outdir, const size_t	countfiles, const size_t element_size, const bool bShowHelp = false);
+extern int Compile(const bool bShowHelp = false);
+extern int CompileSplit(const std::wstring&	argoutdir, const bool bShowHelp = false);
 extern int doRandom(TimeInOut& tio, const bool bShowHelp = false);
 
 extern int Check(const bool bShowHelp = false);

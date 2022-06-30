@@ -10,7 +10,7 @@
 #include <nmmintrin.h>
 
 #include <core/hashes/HashClasses.hpp>
-#include "FilesManager.hpp"
+#include <core/Files.hpp>
 
 namespace appTR {
 
@@ -21,7 +21,7 @@ private:
 	typedef std::array<unsigned char, HASHCLASS::_HASHSIZE>		mytype;
 
 	std::mutex				mylock;
-	FileUnit				blocks;
+	VX::FileUnit			blocks;
 	std::wstring			myname;
 public:
 
@@ -132,7 +132,7 @@ public:
 		unsigned long long crc = 0x00000000ffffffffull;
 		unsigned long long countelems = 0ull;
 
-		FileUnit infile(fname + myname + L".story");
+		VX::FileUnit infile(fname + myname + L".story");
 
 		if(infile.OpenRead())
 		{

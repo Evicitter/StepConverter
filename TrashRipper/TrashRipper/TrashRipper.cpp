@@ -4,12 +4,13 @@
 #include <locale>
 #include <codecvt>
 
+#include "TrashRipper.hpp"
+
 #include <../ffmpegDecoder.hpp>
 #include <core/utils/SpecialProgress.hpp>
 #include <core/hashes/HashClasses.hpp>
 #include <core/PlatformUtils.hpp>
-
-#include "TrashRipper.hpp"
+#include <core/Files.hpp>
 
 #include "classChemicalBurner.hpp"
 #include "classLayersResources.hpp"
@@ -17,15 +18,10 @@
 #include "classGarbageRipper.hpp"
 #include "classRandomizerTest.hpp"
 
-#include "classSplitFile.hpp"
-
-#include "FilesManager.hpp"
-
-//#include "_threads_/ThreadPoolWP.hpp"
 #include "_threads_/ThreadPool-master/ThreadPool.h"
 
 static std::unique_ptr<ThreadPool> defaultThreadPool;
-static appTR::FilesManager GFM;
+static VX::FileManager GFM;
 
 std::wstring	appTR::OutputDirectory;
 
@@ -304,8 +300,7 @@ static void HelpMessage()
 	std::wcerr << "-random" << std::endl;
 	std::wcerr << "-layers-export" << std::endl;
 	std::wcerr << "-compile" << std::endl;
-	std::wcerr << "-compile-split [opt outputDirSplitFiles] [opt sizeBufferSparseMiB=16]" << std::endl;
-	std::wcerr << "-split           : example: -split <inputfile> <outdir> <numFiles range(2:256)> <size_block_bytes range(1:65536)>" << std::endl;
+	std::wcerr << "-compile-split [opt outputDirSplitFiles]" << std::endl;
 	std::wcerr << "\t-list-delete            : Processing files in current directory and deleting ever file after processed." << std::endl;
 	std::wcerr << "\t-file <filename>        : One file processing." << std::endl;
 	std::wcerr << "\t-file-delete <filename> : One file processing and delete file after processed." << std::endl;
@@ -355,204 +350,19 @@ int wmain(const int argc, const wchar_t* argv[])
 	else if (!wcscmp(argv[1], L"-random"))			return appTR::doRandom(registerTIO);
 	else if (!wcscmp(argv[1], L"-check"))			return appTR::Check();
 	else if (!wcscmp(argv[1], L"-unique"))			return appTR::Unique();
-	else if (!wcscmp(argv[1], L"-split"))
-	{
-		std::wstringstream	wss_converter;
-		std::wstring	openfile, outdir;
-		size_t			element_size = 0;
-		size_t			countfiles = 0;
-
-		if (argc <= 5)
-		{
-			std::wcerr << "invalid count params. -split <file name> <outdir (@ use for curdir)> <elem_size> <count_files>" << std::endl;
-			return 1;
-		}
-
-		openfile = argv[2];
-		outdir = argv[3];
-
-		if (outdir.compare(L"@") == 0)
-			outdir.clear();
-
-		wss_converter.clear();
-		wss_converter << argv[4]; //countfiles = static_cast<size_t>(std::wcstoull(argv[4], nullptr, 10));
-		wss_converter >> countfiles;
-		
-		if(countfiles < 2 || countfiles > 256)
-		{
-			std::wcerr << "how count output files (range: 2->256)" << std::endl;
-			return 1;
-		}
-
-		wss_converter.clear();
-		wss_converter << argv[5]; //element_size = static_cast<size_t>(std::wcstoull(argv[5], nullptr, 10));
-		wss_converter >> element_size;
-		
-		if(element_size < 4u || element_size > 65536u)
-		{
-			std::wcerr << "element size (range: 4->65536)" << std::endl;
-			return 1;
-		}
-
-		return appTR::Split(openfile, outdir, countfiles, element_size);
-	}
-	else if (wcscmp(argv[1], L"-compile") == 0)
-	{
-		std::array< const wchar_t*, 4u >	iFilters{
-													//L"GHI_RHash",
-													L"GHI_DRIB",
-													L"GHI_AESDM",
-													L"GHI_AESMMO2",
-													L"GHI_AESHIROSE"
-		};
-
-		unsigned char		buffer[65536u];
-		unsigned long long	sum_files_size = 0u;
-		size_t	nread;
-		size_t	nwcounter = 0u;
-		size_t	lastnwcounter = 0u;
-		clock_t lastclock = clock();
-
-		std::wstring	tmpvar;	tmpvar.reserve(256u);
-
-		for (auto& ifilter : iFilters)
-		{
-			appTR::FileUnit	fileOut(todir + ifilter + L".story");
-
-			if(!fileOut.OpenAppend())
-			{
-				std::wcerr << "File \'" << todir << ifilter << ".story\' don\'t save.\n";
-				return 1;
-			}
-
-			appTR::FileManagerList listFiles(todir + L"*." + ifilter);
-			for (const auto & ifile : listFiles)
-				sum_files_size += ifile.fsize;
-
-			sum_files_size /= 1'048'576ull;
-
-			if (sum_files_size && !fileOut.Prealloc(sum_files_size))
-			{
-				std::wcerr << "File \'" << todir << ifilter << ".story\' out of disk space for preallocation.\n";
-				return 1;
-			}
-
-			for (const auto & ifile : listFiles)
-			{
-				tmpvar = todir + ifile.fname;
-				appTR::FileUnit		fileIn(tmpvar);
-				if(!fileIn.OpenRead())
-				{
-					std::wcerr << "File \'" << tmpvar << " access denied.\n";
-					return 1;
-				}
-
-				//file copy.
-				while (nread =	fileIn.Read(buffer, sizeof(buffer)))
-				{
-					nwcounter +=	fileOut.Write(buffer, nread);
-
-					clock_t cclock = clock();
-					if ((cclock - lastclock) > CLOCKS_PER_SEC)
-					{
-						std::wcerr << '\r' << "write speed: [+" << (nwcounter - lastnwcounter) / 1024u << "KiB/s]         ";
-						lastnwcounter = nwcounter;
-						lastclock = cclock;
-					}
-				}
-
-				fileOut.Flush();
-				fileIn.Close();
-				fileIn.Delete();
-			}
-
-			fileOut.Close();
-		}
-		std::wcerr << std::endl;
-	}
+	else if (!wcscmp(argv[1], L"-compile"))			return appTR::Compile();
 	else if (wcscmp(argv[1], L"-compile-split") == 0)
-	{	
-		std::wstring	outputdir;
-						outputdir.reserve(128u);
-
+	{
 		std::wstring	argoutdir;
-
-		unsigned int	MaxBufferSpliceWritingMiB = 16u; //4GB
-
 		if (argc > 2)
 		{
 			argoutdir = argv[2];
 			if ((argoutdir.size() > 3u) && (argoutdir.back() != L'\\' && argoutdir.back() != L'/'))
 				argoutdir += L'\\';
-			if(!argoutdir.compare(L"@")) //use stub for outdir set in respath.
+			if (!argoutdir.compare(L"@")) //use stub for outdir set in respath.
 				argoutdir.clear();
 		}
-		if (argc > 3)
-		{
-			std::wistringstream(argv[3]) >> MaxBufferSpliceWritingMiB;
-		}
-		
-		std::array< std::tuple< const wchar_t*, const wchar_t*, const unsigned int >, 4u> iFilters {
-																				//std::make_tuple( L"splitRHash",		L"*.GHI_RHash",		16u),
-																				std::make_tuple( L"splitDRIB",		L"*.GHI_DRIB",		32u),
-																				std::make_tuple( L"splitAESDM",		L"*.GHI_AESDM",		32u),
-																				std::make_tuple( L"splitAESMMO2",	L"*.GHI_AESMMO2",	32u),
-																				std::make_tuple( L"splitAESHIROSE",	L"*.GHI_AESHIROSE",	32u),
-		};
-
-		for (const auto& it : iFilters)
-		{
-			outputdir.clear();
-			if(!argoutdir.empty())				outputdir = argoutdir;
-			else if(!todir.empty())				outputdir = todir;
-
-			outputdir += std::get<0u>(it);
-
-			if (_wmkdir(outputdir.c_str()))
-			{
-				int erno;
-				_get_errno(&erno);
-				switch (erno)
-				{
-				case ENOENT: std::wcerr << "Output path not find for <" << std::get<0u>(it) << '>' << std::endl; break;
-				case EEXIST: std::wcerr << "Output path exist! <" << std::get<0u>(it) << '>' << std::endl; break;
-				}
-				//return 1;
-			}
-
-			SplitFile	SF(256u);
-
-			appTR::FileManagerList FML(todir + std::get<1u>(it));
-
-			if ( !SF.openOutput( outputdir, std::to_wstring(std::get<2u>(it)), MaxBufferSpliceWritingMiB) )
-			{
-				std::wcerr << "Can\'t create files or not find output dir <" << outputdir << '>' << std::endl;
-				return 1;
-			}
-			
-			for (const auto & ofile : FML)
-			{
-				if (!SF.openInputFile(todir + ofile.fname))
-				{
-					std::wcerr << "Can\'t open file <" << todir << ofile.fname << '>' << std::endl;
-					return 1;
-				}
-				
-				if (SF.Split( std::get<2u>(it) ))
-				{
-					SF.closeInputFile();
-//WARNING =============================================================================================================================
-					//SF.flushOutput();
-//WARNING =============================================================================================================================
-					_wremove((todir + ofile.fname).c_str());
-				}
-				else
-				{
-					std::wcerr << "Split operation uncomplete on file <" << todir << ofile.fname << '>' << std::endl;
-					return 1;
-				}
-			}
-		}
+		return appTR::CompileSplit(argoutdir);
 	}
 	else if (wcscmp(argv[1], L"-list-delete") == 0)
 	{
@@ -741,7 +551,7 @@ int appTR::Check(const bool bShowHelp)
 	//FOR 16 bytes blocks
 	{
 		HashAnalysis	HA;
-		for (const auto & it : appTR::FileManagerList((OutputDirectory + L"GHI_16_*.story").c_str()))
+		for (const auto & it : VX::FileList((OutputDirectory + L"GHI_16_*.story").c_str()))
 			HA.check(it.fname.c_str(), 16u, OutputDirectory, std::wcerr);
 		HA.print(std::wcout);
 	}
@@ -749,7 +559,7 @@ int appTR::Check(const bool bShowHelp)
 	//FOR 32 bytes blocks
 	{
 		HashAnalysis	HA;
-		for (const auto & it : appTR::FileManagerList((OutputDirectory + L"GHI_32_*.story").c_str()))
+		for (const auto & it : VX::FileList((OutputDirectory + L"GHI_32_*.story").c_str()))
 			HA.check(it.fname.c_str(), 32u, OutputDirectory, std::wcerr);
 		HA.print(std::wcout);
 	}
@@ -780,7 +590,7 @@ int appTR::Unique(const bool bShowHelp)
 	//FOR 16 bytes blocks
 	{
 		HashAnalysis	HA;
-		for (const auto & it : appTR::FileManagerList((OutputDirectory + L"GHI_16_*.story").c_str()))
+		for (const auto & it : VX::FileList((OutputDirectory + L"GHI_16_*.story").c_str()))
 			HA.check(it.fname.c_str(), 16u, OutputDirectory, std::wcerr);
 		HA.print(std::wcout);
 	}
@@ -788,7 +598,7 @@ int appTR::Unique(const bool bShowHelp)
 	//FOR 32 bytes blocks
 	{
 		HashAnalysis	HA;
-		for (const auto & it : appTR::FileManagerList((OutputDirectory + L"GHI_32_*.story").c_str()))
+		for (const auto & it : VX::FileList((OutputDirectory + L"GHI_32_*.story").c_str()))
 			HA.unique(it.fname.c_str(), 32u, OutputDirectory, std::wcerr);
 		HA.print(std::wcout);
 	}

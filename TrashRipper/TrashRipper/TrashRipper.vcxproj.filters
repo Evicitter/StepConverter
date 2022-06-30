@@ -15,6 +15,27 @@
     <Filter Include="HashCls">
       <UniqueIdentifier>{2302dc95-c12d-4e94-8652-d0a7b7d3ae36}</UniqueIdentifier>
     </Filter>
+    <Filter Include="app\classChemicalBurner">
+      <UniqueIdentifier>{d2528015-c5f7-4e95-b525-092f6e2e3699}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="app\classLayerResources">
+      <UniqueIdentifier>{fb7600a9-ee13-4042-8460-9dfe191d1278}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="app\FileManager">
+      <UniqueIdentifier>{44e96d96-d807-44db-9da6-664b0c838461}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="app\classGarbajeRipper">
+      <UniqueIdentifier>{46a97244-651c-4edd-b292-a03f3fbef71a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="app\classHashAccumulator">
+      <UniqueIdentifier>{23c3cf27-e062-47ee-9d60-0d2fc2c94167}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="app\classRandomizerTest">
+      <UniqueIdentifier>{3ff9e008-cf87-4bb3-ab8a-2e125d76c2e1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="app\commands">
+      <UniqueIdentifier>{82ad4767-7ecc-4558-8c42-bce8b658800b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="TrashRipper.cpp">
@@ -33,65 +54,95 @@
       <Filter>ffmpeg_api\sources</Filter>
     </ClCompile>
     <ClCompile Include="C1.cpp">
-      <Filter>app</Filter>
+      <Filter>app\classChemicalBurner</Filter>
     </ClCompile>
     <ClCompile Include="C2.cpp">
-      <Filter>app</Filter>
+      <Filter>app\classChemicalBurner</Filter>
     </ClCompile>
     <ClCompile Include="C3.cpp">
-      <Filter>app</Filter>
+      <Filter>app\classChemicalBurner</Filter>
     </ClCompile>
     <ClCompile Include="C4.cpp">
-      <Filter>app</Filter>
+      <Filter>app\classChemicalBurner</Filter>
     </ClCompile>
     <ClCompile Include="C5.cpp">
-      <Filter>app</Filter>
+      <Filter>app\classChemicalBurner</Filter>
     </ClCompile>
     <ClCompile Include="C6.cpp">
-      <Filter>app</Filter>
+      <Filter>app\classChemicalBurner</Filter>
     </ClCompile>
     <ClCompile Include="C7.cpp">
-      <Filter>app</Filter>
+      <Filter>app\classChemicalBurner</Filter>
+    </ClCompile>
+    <ClCompile Include="classChemicalBurner.cpp">
+      <Filter>app\classChemicalBurner</Filter>
+    </ClCompile>
+    <ClCompile Include="classLayersResources.cpp">
+      <Filter>app\classLayerResources</Filter>
+    </ClCompile>
+    <ClCompile Include="classGarbageRipper.cpp">
+      <Filter>app\classGarbajeRipper</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\VirtualEngine\sources\core\_win_\PlatformUtilsWindows.cpp">
+      <Filter>HashCls</Filter>
+    </ClCompile>
+    <ClCompile Include="classHashAccumulator.cpp">
+      <Filter>app\classHashAccumulator</Filter>
+    </ClCompile>
+    <ClCompile Include="classRandomizerTest.cpp">
+      <Filter>app\classRandomizerTest</Filter>
+    </ClCompile>
+    <ClCompile Include="cmd_dump.cpp">
+      <Filter>app\commands</Filter>
+    </ClCompile>
+    <ClCompile Include="cmd_exportlayers.cpp">
+      <Filter>app\commands</Filter>
+    </ClCompile>
+    <ClCompile Include="cmd_merge.cpp">
+      <Filter>app\commands</Filter>
+    </ClCompile>
+    <ClCompile Include="cmd_compile_and_split.cpp">
+      <Filter>app\commands</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\VirtualEngine\sources\core\_ansi_\FilesANSI.cpp">
+      <Filter>app\FileManager</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\VirtualEngine\sources\core\_win_\FilesWindows.cpp">
+      <Filter>app\FileManager</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\VXcore\include\core\hashes\HashClasses.hpp">
+    <ClInclude Include="..\..\..\VirtualEngine\include\core\hashes\HashClasses.hpp">
       <Filter>HashCls</Filter>
     </ClInclude>
     <ClInclude Include="..\ffmpeg_api\ffmpegDecoder.hpp">
       <Filter>ffmpeg_api</Filter>
     </ClInclude>
-    <ClInclude Include="FilesManager.hpp">
-      <Filter>app</Filter>
-    </ClInclude>
     <ClInclude Include="bitmap_image.hpp">
       <Filter>app</Filter>
     </ClInclude>
-    <ClInclude Include="classChemicalBurner.hpp">
-      <Filter>app</Filter>
+    <ClInclude Include="..\..\..\VirtualEngine\include\core\hashes\ColidPool.hpp">
+      <Filter>HashCls</Filter>
     </ClInclude>
-    <ClInclude Include="classMaterialSpector.hpp">
-      <Filter>app</Filter>
+    <ClInclude Include="classChemicalBurner.hpp">
+      <Filter>app\classChemicalBurner</Filter>
     </ClInclude>
     <ClInclude Include="classLayersResources.hpp">
-      <Filter>app</Filter>
-    </ClInclude>
-    <ClInclude Include="classHashAccumulator.hpp">
-      <Filter>app</Filter>
-    </ClInclude>
-    <ClInclude Include="classRandomizerTest.hpp">
-      <Filter>app</Filter>
+      <Filter>app\classLayerResources</Filter>
     </ClInclude>
     <ClInclude Include="classGarbageRipper.hpp">
-      <Filter>app</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\VXcore\include\core\hashes\ColidPool.hpp">
-      <Filter>HashCls</Filter>
+      <Filter>app\classGarbajeRipper</Filter>
     </ClInclude>
     <ClInclude Include="classHashAnalysis.hpp">
       <Filter>app</Filter>
     </ClInclude>
-    <ClInclude Include="classSplitFile.hpp">
+    <ClInclude Include="classHashAccumulator.hpp">
+      <Filter>app\classHashAccumulator</Filter>
+    </ClInclude>
+    <ClInclude Include="classRandomizerTest.hpp">
+      <Filter>app\classRandomizerTest</Filter>
+    </ClInclude>
+    <ClInclude Include="TrashRipper.hpp">
       <Filter>app</Filter>
     </ClInclude>
   </ItemGroup>
